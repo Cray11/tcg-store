@@ -182,14 +182,229 @@ npm run build
 # Deploy dist/ folder to your hosting service
 ```
 
-## 🤝 Contributing
+## 🤝 Contributing & Git Workflow
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Make your changes and test thoroughly
-4. Commit: `git commit -m 'Add some feature'`
-5. Push: `git push origin feature/your-feature`
-6. Open a Pull Request
+### 📋 Development Workflow
+
+1. **Fork & Clone**
+   ```bash
+   git clone https://github.com/Cray11/tcg-store.git
+   cd tcg-store
+   git remote add upstream https://github.com/Cray11/tcg-store.git
+   ```
+
+2. **Keep your fork updated**
+   ```bash
+   git checkout main
+   git pull upstream main
+   git push origin main
+   ```
+
+### 🌿 Branching Strategy
+
+We use a feature branch workflow with the following naming conventions:
+
+- **Features**: `feature/description-of-feature`
+- **Bug fixes**: `fix/description-of-bug`
+- **Hotfixes**: `hotfix/critical-fix`
+- **Documentation**: `docs/update-readme`
+
+**Never commit directly to `main` branch!**
+
+### 🚀 Working on Features
+
+1. **Create a feature branch**
+   ```bash
+   git checkout main
+   git pull upstream main
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Make your changes**
+   - Write clean, tested code
+   - Follow the existing code style
+   - Update documentation if needed
+   - Test your changes thoroughly
+
+3. **Commit your changes**
+   ```bash
+   # Stage your changes
+   git add .
+
+   # Commit with descriptive message
+   git commit -m "feat: add user authentication feature
+
+   - Implement JWT token authentication
+   - Add login/register endpoints
+   - Update frontend auth store
+   - Add proper error handling"
+
+   # Use conventional commit format:
+   # feat: new feature
+   # fix: bug fix
+   # docs: documentation
+   # style: formatting
+   # refactor: code restructuring
+   # test: adding tests
+   # chore: maintenance
+   ```
+
+4. **Push your branch**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+5. **Create a Pull Request**
+   - Go to GitHub and create a PR from your branch to `main`
+   - Fill out the PR template with:
+     - Clear description of changes
+     - Screenshots/videos if UI changes
+     - Testing instructions
+     - Related issues
+
+### 🔄 Pull Request Process
+
+1. **PR Review Requirements**
+   - At least 1 reviewer approval required
+   - All CI checks must pass
+   - No merge conflicts
+   - Tests pass locally
+
+2. **Code Review Checklist**
+   - [ ] Code follows project conventions
+   - [ ] Tests are included/updated
+   - [ ] Documentation is updated
+   - [ ] No console errors or warnings
+   - [ ] Responsive design (if frontend)
+   - [ ] Accessibility considerations
+
+3. **Merging**
+   - Use "Squash and merge" for clean history
+   - Delete the feature branch after merge
+
+### 🔧 Daily Git Commands
+
+```bash
+# Check status
+git status
+
+# See changes
+git diff
+git diff --staged
+
+# Undo changes
+git checkout -- file.txt          # Discard changes to file
+git reset HEAD file.txt           # Unstage file
+git reset --hard HEAD             # Discard all changes (dangerous!)
+
+# Update from main
+git checkout main
+git pull upstream main
+git checkout your-branch
+git rebase main                    # Or git merge main
+
+# Clean up local branches
+git branch -d feature/old-branch   # Delete merged branch
+git remote prune origin           # Remove deleted remote branches
+```
+
+### 🚨 Conflict Resolution
+
+If you encounter merge conflicts:
+
+```bash
+# Abort current merge/rebase
+git merge --abort
+# or
+git rebase --abort
+
+# Resolve conflicts manually, then:
+git add resolved-file.txt
+git commit -m "Resolve merge conflicts"
+```
+
+### 📝 Commit Message Guidelines
+
+Follow conventional commits:
+
+```
+type(scope): description
+
+[optional body]
+
+[optional footer]
+```
+
+**Types:**
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation
+- `style`: Code style changes
+- `refactor`: Code refactoring
+- `test`: Adding tests
+- `chore`: Maintenance
+
+**Examples:**
+```
+feat(auth): add Google OAuth login
+fix(cart): resolve duplicate items bug
+docs(readme): update installation instructions
+refactor(api): simplify user serializer
+```
+
+### 🔒 Protected Branches
+
+- `main`: Protected branch, requires PR review
+- Direct pushes disabled
+- Force pushes disabled
+- Branch deletion disabled
+
+### 🧪 Pre-commit Checks
+
+Before pushing, ensure:
+
+```bash
+# Backend
+cd backend
+python manage.py check
+python manage.py test
+pip install -r requirements.dev.txt  # If using pre-commit hooks
+
+# Frontend
+cd frontend
+npm run lint
+npm run build  # Ensure no build errors
+```
+
+### 📞 Communication
+
+- Use GitHub Issues for bugs/features
+- Use PR comments for code discussion
+- Keep commits atomic and focused
+- Update PR description as work progresses
+
+### 🎯 Best Practices
+
+- **Small, focused PRs** - Easier to review
+- **Regular commits** - Don't wait until feature is "done"
+- **Test locally** - Don't rely only on CI
+- **Update dependencies** - Keep packages current
+- **Document breaking changes** - Update README/API docs
+- **Pair programming** - For complex features
+
+### 🚨 Emergency Procedures
+
+**If you accidentally committed to main:**
+1. Don't panic
+2. Create a revert commit: `git revert HEAD`
+3. Push the revert
+4. Create proper feature branch for the changes
+
+**If you need to undo a commit:**
+```bash
+git reset --soft HEAD~1  # Keep changes staged
+git reset --hard HEAD~1  # Discard changes completely
+```
 
 ## 📝 License
 
