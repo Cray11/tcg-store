@@ -1,12 +1,11 @@
 import stripe
-import json
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from apps.orders.models import Order
+from apps.notifications.emails import send_order_confirmation_email
 from .models import Payment
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -86,7 +85,6 @@ def _handle_payment_succeeded(payment_intent):
         payment.save()
         payment.order.status = "PROCESSING"
         payment.order.save()
-        from apps.notifications.emails import send_order_confirmation_email
         send_order_confirmation_email(payment.order)
     except Payment.DoesNotExist:
         pass
