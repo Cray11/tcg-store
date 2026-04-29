@@ -43,6 +43,36 @@ const OrderSuccessPage = lazy(() => import("./pages/checkout/OrderSuccessPage"))
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const ServerErrorPage = lazy(() => import("./pages/ServerErrorPage"));
 
+const PUBLIC_ROUTES = [
+  { path: "/", component: HomePage },
+  { path: "/products", component: ProductListPage },
+  { path: "/products/:slug", component: ProductDetailPage },
+  { path: "/search", component: SearchResultsPage },
+  { path: "/login", component: LoginPage },
+  { path: "/register", component: RegisterPage },
+  { path: "/forgot-password", component: ForgotPasswordPage },
+  { path: "/reset-password/:uid/:token", component: ResetPasswordPage },
+  { path: "/verify-email", component: VerifyEmailPage },
+  { path: "/cart", component: CartPage },
+  { path: "/500", component: ServerErrorPage },
+  { path: "*", component: NotFoundPage },
+];
+
+const PROTECTED_ROUTES = [
+  { path: "/checkout/shipping", component: ShippingPage },
+  { path: "/checkout/method", component: ShippingMethodPage },
+  { path: "/checkout/payment", component: PaymentPage },
+  { path: "/checkout/success", component: OrderSuccessPage },
+  { path: "/account", component: AccountDashboardPage },
+  { path: "/account/profile", component: ProfilePage },
+  { path: "/account/addresses", component: AddressBookPage },
+  { path: "/account/orders", component: OrderHistoryPage },
+  { path: "/account/orders/:id", component: OrderDetailPage },
+  { path: "/account/password", component: ChangePasswordPage },
+];
+
+const ROUTE_TRANSITION = { duration: 0.2 };
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -62,6 +92,7 @@ function AppShell() {
 
     async function bootstrapSession() {
       if (!accessToken) {
+        setPageLoading(false);
         clearCart();
         return;
       }
@@ -112,101 +143,23 @@ function AppShell() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
+              transition={ROUTE_TRANSITION}
             >
               <Routes location={location}>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/products" element={<ProductListPage />} />
-                <Route path="/products/:slug" element={<ProductDetailPage />} />
-                <Route path="/search" element={<SearchResultsPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
-                <Route path="/verify-email" element={<VerifyEmailPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route
-                  path="/checkout/shipping"
-                  element={
-                    <ProtectedRoute>
-                      <ShippingPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/checkout/method"
-                  element={
-                    <ProtectedRoute>
-                      <ShippingMethodPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/checkout/payment"
-                  element={
-                    <ProtectedRoute>
-                      <PaymentPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/checkout/success"
-                  element={
-                    <ProtectedRoute>
-                      <OrderSuccessPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/account"
-                  element={
-                    <ProtectedRoute>
-                      <AccountDashboardPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/account/profile"
-                  element={
-                    <ProtectedRoute>
-                      <ProfilePage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/account/addresses"
-                  element={
-                    <ProtectedRoute>
-                      <AddressBookPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/account/orders"
-                  element={
-                    <ProtectedRoute>
-                      <OrderHistoryPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/account/orders/:id"
-                  element={
-                    <ProtectedRoute>
-                      <OrderDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/account/password"
-                  element={
-                    <ProtectedRoute>
-                      <ChangePasswordPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/500" element={<ServerErrorPage />} />
-                <Route path="*" element={<NotFoundPage />} />
+                {PUBLIC_ROUTES.map(({ path, component: Component }) => (
+                  <Route key={path} path={path} element={<Component />} />
+                ))}
+                {PROTECTED_ROUTES.map(({ path, component: Component }) => (
+                  <Route
+                    key={path}
+                    path={path}
+                    element={
+                      <ProtectedRoute>
+                        <Component />
+                      </ProtectedRoute>
+                    }
+                  />
+                ))}
               </Routes>
             </motion.div>
           </AnimatePresence>
