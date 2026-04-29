@@ -3,5 +3,6 @@ from . import views
 
 urlpatterns = [
     path("create-intent/", views.create_payment_intent, name="create_payment_intent"),
+    path("simulate-success/", views.simulate_payment_success, name="simulate_payment_success"),
     path("webhook/", views.stripe_webhook, name="stripe_webhook"),
 ]

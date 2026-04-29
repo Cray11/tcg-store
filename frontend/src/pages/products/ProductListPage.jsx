@@ -1,203 +1,307 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { productsAPI } from "../../api/products";
-import ProductCard from "../../components/products/ProductCard";
-import { ProductCardSkeleton } from "../../components/ui/Skeleton";
-import PageWrapper from "../../components/layout/PageWrapper";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { SlidersHorizontal, X } from "lucide-react";
+import { productsAPI } from "../../api/products";
+import PageWrapper from "../../components/layout/PageWrapper";
+import FilterSidebar from "../../components/products/FilterSidebar";
+import ProductGrid from "../../components/products/ProductGrid";
+import SearchBar from "../../components/products/SearchBar";
+import Pagination from "../../components/ui/Pagination";
+import Select from "../../components/ui/Select";
+import useDebouncedValue from "../../hooks/useDebouncedValue";
+import {
+  CONDITIONS,
+  LANGUAGES,
+  PRODUCT_TYPES,
+  RARITIES,
+  SORT_OPTIONS,
+} from "../../utils/constants";
+import { getPagination, getPayload } from "../../utils/api";
+import { cn } from "../../utils/cn";
 
-const CONDITIONS = ["NM", "LP", "MP", "HP", "DMG"];
-const TYPES = ["SINGLE", "PACK", "BOX", "BUNDLE", "TIN"];
-const SORT_OPTIONS = [
-  { label: "Newest", value: "-created_at" },
-  { label: "Price: Low to High", value: "price" },
-  { label: "Price: High to Low", value: "-price" },
-  { label: "Name A-Z", value: "name" },
-];
-
-export default function ProductListPage() {
+export function CatalogPage({ mode = "browse" }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const searchParamName = mode === "search" ? "q" : "search";
+  const currentSearch = searchParams.get(searchParamName) ?? "";
+  const [searchInput, setSearchInput] = useState(currentSearch);
+  const debouncedSearch = useDebouncedValue(searchInput, 300);
 
-  const currentPage = Number(searchParams.get("page") ?? 1);
+  useEffect(() => {
+    if (debouncedSearch === currentSearch) {
+      return;
+    }
 
-  const fetchProducts = () => {
-    setLoading(true);
-    const params = Object.fromEntries(searchParams.entries());
-    productsAPI.getProducts(params)
-      .then(({ data }) => {
-        setProducts(data.data ?? []);
-        setPagination(data.pagination);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
+    const next = new URLSearchParams(searchParams);
+    if (debouncedSearch) {
+      next.set(searchParamName, debouncedSearch);
+    } else {
+      next.delete(searchParamName);
+    }
+    next.delete("page");
+    setSearchParams(next, { replace: true });
+  }, [currentSearch, debouncedSearch, searchParamName, searchParams, setSearchParams]);
 
-  useEffect(() => { fetchProducts(); }, [searchParams.toString()]);
+  useEffect(() => {
+    let active = true;
+
+    async function loadCatalog() {
+      setLoading(true);
+      try {
+        const params = {
+          ...Object.fromEntries(searchParams.entries()),
+          game: "POKEMON",
+        };
+        if (mode === "search") {
+          params.search = params.q ?? "";
+          delete params.q;
+        }
+
+        const requests = [productsAPI.getProducts(params)];
+        if (mode === "browse") {
+          requests.push(productsAPI.getCategories({ game: "POKEMON" }));
+        }
+
+        const [productsResponse, categoriesResponse] = await Promise.all(requests);
+
+        if (!active) {
+          return;
+        }
+
+        setProducts(getPayload(productsResponse) ?? []);
+        setPagination(getPagination(productsResponse));
+        if (categoriesResponse) {
+          setCategories(getPayload(categoriesResponse) ?? []);
+        }
+      } catch {
+        if (!active) {
+          return;
+        }
+        setProducts([]);
+        setPagination(null);
+        if (mode === "browse") {
+          setCategories([]);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCatalog();
+
+    return () => {
+      active = false;
+    };
+  }, [mode, searchParams]);
+
+  const filters = useMemo(
+    () => ({
+      search: currentSearch,
+      ordering: searchParams.get("ordering") ?? "-created_at",
+      categorySlug: searchParams.get("category__slug") ?? "",
+      rarity: searchParams.get("rarity") ?? "",
+      condition: searchParams.get("condition") ?? "",
+      productType: searchParams.get("product_type") ?? "",
+      minPrice: searchParams.get("min_price") ?? "",
+      maxPrice: searchParams.get("max_price") ?? "",
+      inStock: searchParams.get("in_stock") === "true",
+      language: searchParams.get("language") ?? "",
+    }),
+    [currentSearch, searchParams]
+  );
+
+  const resultLabel = mode === "search"
+    ? `${pagination?.total ?? 0} results for "${currentSearch || "all cards"}"`
+    : `${pagination?.total ?? 0} cards found`;
 
   const updateParam = (key, value) => {
     const next = new URLSearchParams(searchParams);
-    if (value) next.set(key, value); else next.delete(key);
-    next.delete("page");
+    const mapping = {
+      ordering: "ordering",
+      categorySlug: "category__slug",
+      rarity: "rarity",
+      condition: "condition",
+      productType: "product_type",
+      minPrice: "min_price",
+      maxPrice: "max_price",
+      inStock: "in_stock",
+      language: "language",
+      page: "page",
+    };
+
+    const paramKey = mapping[key] ?? key;
+
+    if (value === "" || value === false || value == null) {
+      next.delete(paramKey);
+    } else if (typeof value === "boolean") {
+      next.set(paramKey, value ? "true" : "false");
+    } else {
+      next.set(paramKey, String(value));
+    }
+
+    if (paramKey !== "page") {
+      next.delete("page");
+    }
+
     setSearchParams(next);
   };
 
-  const clearFilters = () => setSearchParams({});
+  const clearFilters = () => {
+    if (mode === "search") {
+      const next = new URLSearchParams();
+      if (currentSearch) {
+        next.set("q", currentSearch);
+      }
+      setSearchInput(currentSearch);
+      setSearchParams(next);
+      return;
+    }
+    setSearchInput("");
+    setSearchParams({});
+  };
+
+  const activeChips = [
+    filters.categorySlug && categories.find((category) => category.slug === filters.categorySlug)?.name,
+    filters.rarity && RARITIES.find((item) => item.value === filters.rarity)?.label,
+    filters.condition && CONDITIONS.find((item) => item.value === filters.condition)?.label,
+    filters.productType && PRODUCT_TYPES.find((item) => item.value === filters.productType)?.label,
+    filters.language && LANGUAGES.find((language) => language === filters.language),
+    filters.inStock && "In Stock",
+    filters.minPrice && `Min ${filters.minPrice}`,
+    filters.maxPrice && `Max ${filters.maxPrice}`,
+  ].filter(Boolean);
 
   return (
     <PageWrapper>
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-primary-700">Browse Cards</h1>
-          {pagination && (
-            <p className="text-sm text-gray-500 mt-0.5">
-              {pagination.total} products found
-            </p>
-          )}
+          <p className="section-kicker">
+            <Link to="/" className="hover:text-drac-gold">Home</Link>
+            {" > "}
+            {mode === "search" ? "Search" : "Cards"}
+          </p>
+          <h1 className="mt-2 font-heading text-5xl tracking-[0.16em] text-drac-gold">
+            {mode === "search" ? "Search Results" : "All Pokemon Cards"}
+          </h1>
+          <p className="mt-2 text-sm text-drac-muted">{resultLabel}</p>
         </div>
-        <button onClick={() => setShowFilters(!showFilters)}
-          className="md:hidden flex items-center gap-2 btn-outline text-sm">
-          <SlidersHorizontal className="h-4 w-4" />
-          Filters
-        </button>
+
+        <div className="flex items-center gap-3">
+          {mode === "search" ? (
+            <SearchBar
+              key={currentSearch}
+              initialValue={currentSearch}
+              placeholder="Search for Charizard, Pikachu, Paldea..."
+              onSubmit={(value) => setSearchInput(value)}
+              className="w-full md:w-[360px]"
+            />
+          ) : null}
+          <div className="w-full md:w-56">
+            <Select
+              name="ordering"
+              value={filters.ordering}
+              onChange={(event) => updateParam("ordering", event.target.value)}
+              options={SORT_OPTIONS}
+            />
+          </div>
+          {mode === "browse" ? (
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen((current) => !current)}
+              className="inline-flex items-center gap-2 rounded-full border border-drac-border bg-drac-surface px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-drac-text md:hidden"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Filters
+            </button>
+          ) : null}
+        </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Sidebar filters */}
-        <aside className={`md:block w-full md:w-64 shrink-0
-          ${showFilters ? "block" : "hidden"}`}>
-          <div className="card p-5 sticky top-24 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800">Filters</h3>
-              <button onClick={clearFilters}
-                className="text-xs text-accent-500 hover:underline flex items-center gap-1">
-                <X className="h-3 w-3" /> Clear all
-              </button>
-            </div>
+      {activeChips.length ? (
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          {activeChips.map((chip) => (
+            <span key={chip} className="filter-chip">
+              {chip}
+            </span>
+          ))}
+          <button type="button" onClick={clearFilters} className="text-xs font-semibold uppercase tracking-[0.16em] text-drac-gold">
+            Clear All
+          </button>
+        </div>
+      ) : null}
 
-            {/* Sort */}
-            <div>
-              <label className="text-xs font-semibold text-gray-500
-                uppercase tracking-wider block mb-2">Sort By</label>
-              <select
-                value={searchParams.get("ordering") ?? "-created_at"}
-                onChange={(e) => updateParam("ordering", e.target.value)}
-                className="input-field text-sm">
-                {SORT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Condition */}
-            <div>
-              <label className="text-xs font-semibold text-gray-500
-                uppercase tracking-wider block mb-2">Condition</label>
-              <div className="flex flex-wrap gap-2">
-                {CONDITIONS.map((c) => (
-                  <button key={c}
-                    onClick={() => updateParam("condition",
-                      searchParams.get("condition") === c ? "" : c)}
-                    className={`badge cursor-pointer transition-all ${
-                      searchParams.get("condition") === c
-                        ? "bg-primary-700 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}>
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Product Type */}
-            <div>
-              <label className="text-xs font-semibold text-gray-500
-                uppercase tracking-wider block mb-2">Product Type</label>
-              <div className="space-y-1">
-                {TYPES.map((t) => (
-                  <label key={t} className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="type"
-                      checked={searchParams.get("product_type") === t}
-                      onChange={() => updateParam("product_type",
-                        searchParams.get("product_type") === t ? "" : t)}
-                      className="text-primary-700" />
-                    <span className="text-sm text-gray-700">{t}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Price Range */}
-            <div>
-              <label className="text-xs font-semibold text-gray-500
-                uppercase tracking-wider block mb-2">Price Range (₱)</label>
-              <div className="flex gap-2">
-                <input type="number" placeholder="Min"
-                  value={searchParams.get("min_price") ?? ""}
-                  onChange={(e) => updateParam("min_price", e.target.value)}
-                  className="input-field text-sm" />
-                <input type="number" placeholder="Max"
-                  value={searchParams.get("max_price") ?? ""}
-                  onChange={(e) => updateParam("max_price", e.target.value)}
-                  className="input-field text-sm" />
-              </div>
-            </div>
-
-            {/* In Stock only */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox"
-                checked={searchParams.get("in_stock") === "true"}
-                onChange={(e) => updateParam("in_stock", e.target.checked ? "true" : "")}
-                className="rounded text-primary-700" />
-              <span className="text-sm font-medium text-gray-700">In Stock Only</span>
-            </label>
-          </div>
-        </aside>
-
-        {/* Product Grid */}
-        <div className="flex-1">
-          {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-            </div>
-          ) : products.length === 0 ? (
-            <div className="card p-16 text-center">
-              <p className="text-4xl mb-3">🃏</p>
-              <h3 className="font-semibold text-gray-700">No products found</h3>
-              <p className="text-sm text-gray-500 mt-1">Try adjusting your filters.</p>
-              <button onClick={clearFilters} className="btn-primary mt-4 text-sm">
-                Clear Filters
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {products.map((p) => <ProductCard key={p.id} product={p} />)}
-              </div>
-
-              {/* Pagination */}
-              {pagination && pagination.total_pages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-8">
-                  <button
-                    disabled={!pagination.has_previous}
-                    onClick={() => updateParam("page", currentPage - 1)}
-                    className="btn-outline text-sm disabled:opacity-40">← Prev</button>
-                  <span className="text-sm text-gray-600">
-                    Page {pagination.page} of {pagination.total_pages}
-                  </span>
-                  <button
-                    disabled={!pagination.has_next}
-                    onClick={() => updateParam("page", currentPage + 1)}
-                    className="btn-outline text-sm disabled:opacity-40">Next →</button>
-                </div>
+      <div className={cn("grid gap-6", mode === "browse" && "lg:grid-cols-[280px_minmax(0,1fr)]")}>
+        {mode === "browse" ? (
+          <>
+            <FilterSidebar
+              categories={categories}
+              filters={filters}
+              searchValue={searchInput}
+              onChange={updateParam}
+              onSearchChange={setSearchInput}
+              onClear={clearFilters}
+              className={cn(
+                "hidden lg:block",
+                mobileFiltersOpen && "block"
               )}
-            </>
-          )}
+            />
+            {mobileFiltersOpen ? (
+              <div className="fixed inset-0 z-40 bg-drac-bg/80 px-4 py-24 backdrop-blur lg:hidden">
+                <FilterSidebar
+                  categories={categories}
+                  filters={filters}
+                  searchValue={searchInput}
+                  onChange={updateParam}
+                  onSearchChange={setSearchInput}
+                  onClear={() => {
+                    clearFilters();
+                    setMobileFiltersOpen(false);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMobileFiltersOpen(false)}
+                  className="absolute right-6 top-24 rounded-full border border-drac-border bg-drac-surface p-3 text-drac-text"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : null}
+          </>
+        ) : null}
+
+        <div>
+          <ProductGrid
+            products={products}
+            loading={loading}
+            columns={mode === "search"
+              ? "grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+              : "grid-cols-2 md:grid-cols-3 xl:grid-cols-4"}
+            emptyTitle={mode === "search" ? `No results for "${currentSearch}"` : "No cards found"}
+            emptyDescription={mode === "search"
+              ? "Try checking spelling or search for a set name instead."
+              : "Try different filters to find more cards."}
+          />
+
+          <Pagination
+            page={pagination?.page ?? 1}
+            totalPages={pagination?.total_pages ?? 1}
+            hasNext={pagination?.has_next}
+            hasPrevious={pagination?.has_previous}
+            onChange={(page) => updateParam("page", page)}
+          />
         </div>
       </div>
     </PageWrapper>
   );
+}
+
+export default function ProductListPage() {
+  return <CatalogPage mode="browse" />;
 }

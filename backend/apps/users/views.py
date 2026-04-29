@@ -7,10 +7,11 @@ from django.shortcuts import get_object_or_404
 from .models import CustomUser, Address
 from .serializers import (
     RegisterSerializer, UserSerializer,
-    ChangePasswordSerializer, AddressSerializer
+    ChangePasswordSerializer, ResetPasswordConfirmSerializer, AddressSerializer
 )
 from apps.notifications.emails import send_welcome_email, send_password_reset_email
-import uuid
+from apps.cart.models import Cart
+from apps.cart.utils import merge_guest_cart
 
 
 def success_response(data=None, message="", status_code=status.HTTP_200_OK):
@@ -35,7 +36,7 @@ class RegisterView(generics.CreateAPIView):
         tokens = get_tokens_for_user(user)
         return success_response(
             data={"user": UserSerializer(user).data, "tokens": tokens},
-            message="Registration successful. Please verify your email.",
+            message="Registration successful.",
             status_code=status.HTTP_201_CREATED
         )
 
@@ -61,6 +62,14 @@ def login_view(request):
             {"detail": "Account is disabled."},
             status_code=status.HTTP_403_FORBIDDEN
         )
+
+    session_key = request.session.session_key
+    if session_key:
+        guest_cart = Cart.objects.filter(session_key=session_key, user=None).first()
+        if guest_cart:
+            user_cart, _ = Cart.objects.get_or_create(user=user)
+            if guest_cart.pk != user_cart.pk:
+                merge_guest_cart(guest_cart, user_cart)
 
     tokens = get_tokens_for_user(user)
     return success_response(
@@ -123,6 +132,20 @@ def password_reset_request(request):
     except CustomUser.DoesNotExist:
         pass  # Don't reveal if email exists
     return success_response(message="If that email exists, a reset link has been sent.")
+
+
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def password_reset_confirm(request):
+    serializer = ResetPasswordConfirmSerializer(data=request.data)
+    if not serializer.is_valid():
+        return error_response(serializer.errors)
+
+    user = serializer.validated_data["user"]
+    user.set_password(serializer.validated_data["new_password"])
+    user.save()
+
+    return success_response(message="Password has been reset successfully.")
 
 
 # ── Addresses ─────────────────────────────────────────────────────

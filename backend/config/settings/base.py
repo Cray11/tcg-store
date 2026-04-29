@@ -91,7 +91,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "apps.products.pagination.StandardPagination",
     "PAGE_SIZE": 24,
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
-    "EXCEPTION_HANDLER": "apps.users.exceptions.custom_exception_handler",
+    "EXCEPTION_HANDLER": "apps.users.exception.custom_exception_handler",
 }
 
 # ── JWT ───────────────────────────────────────────────────────────

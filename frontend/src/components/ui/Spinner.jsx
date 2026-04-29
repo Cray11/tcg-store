@@ -1,7 +1,12 @@
-export default function Spinner({ size = "md" }) {
-  const sizes = { sm: "h-4 w-4", md: "h-8 w-8", lg: "h-12 w-12" };
+import { LoaderCircle } from "lucide-react";
+import { cn } from "../../utils/cn";
+
+export default function Spinner({ size = "md", className = "" }) {
+  const sizes = { sm: "h-4 w-4", md: "h-5 w-5", lg: "h-10 w-10" };
+
   return (
-    <div className={`${sizes[size]} animate-spin rounded-full
-      border-4 border-gray-200 border-t-accent-500`} />
+    <LoaderCircle
+      className={cn("animate-spin text-current", sizes[size] ?? sizes.md, className)}
+    />
   );
 }

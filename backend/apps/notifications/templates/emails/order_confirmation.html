@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DracNest Invoice</title>
+</head>
+<body style="margin:0;padding:0;background:#0d1b2a;color:#f0f4f8;font-family:Arial,sans-serif;">
+  <div style="max-width:680px;margin:0 auto;padding:32px 20px;">
+    <div style="background:#162032;border:1px solid rgba(245,200,66,0.15);border-radius:24px;overflow:hidden;">
+      <div style="padding:28px 28px 20px;background:linear-gradient(135deg,#162032 0%,#1a3a5c 100%);">
+        <p style="margin:0 0 8px;color:#7a90a8;font-size:12px;letter-spacing:2px;text-transform:uppercase;">
+          DracNest Invoice
+        </p>
+        <h1 style="margin:0;color:#f5c842;font-size:32px;line-height:1.1;">
+          Payment Confirmed
+        </h1>
+        <p style="margin:12px 0 0;color:#f0f4f8;font-size:15px;line-height:1.7;">
+          Thanks for your order. Your items are now being prepared in the nest.
+        </p>
+      </div>
+
+      <div style="padding:28px;">
+        <div style="margin-bottom:24px;padding:18px;border-radius:18px;background:#1e2d42;">
+          <p style="margin:0 0 8px;color:#7a90a8;font-size:12px;letter-spacing:1.8px;text-transform:uppercase;">
+            Order Details
+          </p>
+          <p style="margin:0 0 8px;font-size:15px;">
+            <strong>Order Number:</strong> {{ order.order_number }}
+          </p>
+          <p style="margin:0 0 8px;font-size:15px;">
+            <strong>Status:</strong> {{ order.status }}
+          </p>
+          <p style="margin:0;font-size:15px;">
+            <strong>Shipping Method:</strong> {{ order.shipping_method }}
+          </p>
+        </div>
+
+        <h2 style="margin:0 0 14px;color:#f5c842;font-size:20px;">Items</h2>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+          <thead>
+            <tr>
+              <th align="left" style="padding:10px 0;border-bottom:1px solid rgba(245,200,66,0.15);color:#7a90a8;font-size:12px;text-transform:uppercase;letter-spacing:1.6px;">Product</th>
+              <th align="center" style="padding:10px 0;border-bottom:1px solid rgba(245,200,66,0.15);color:#7a90a8;font-size:12px;text-transform:uppercase;letter-spacing:1.6px;">Qty</th>
+              <th align="right" style="padding:10px 0;border-bottom:1px solid rgba(245,200,66,0.15);color:#7a90a8;font-size:12px;text-transform:uppercase;letter-spacing:1.6px;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in order.items.all %}
+            <tr>
+              <td style="padding:12px 0;border-bottom:1px solid rgba(245,200,66,0.08);">
+                <div style="font-size:15px;font-weight:700;color:#f0f4f8;">{{ item.product_name }}</div>
+                <div style="font-size:13px;color:#7a90a8;">
+                  {{ item.product_set }}{% if item.product_condition %} • {{ item.product_condition }}{% endif %}
+                </div>
+              </td>
+              <td align="center" style="padding:12px 0;border-bottom:1px solid rgba(245,200,66,0.08);font-size:14px;color:#f0f4f8;">
+                {{ item.quantity }}
+              </td>
+              <td align="right" style="padding:12px 0;border-bottom:1px solid rgba(245,200,66,0.08);font-size:14px;color:#f5c842;">
+                PHP {{ item.total_price }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div style="margin-bottom:24px;padding:18px;border-radius:18px;background:#1e2d42;">
+          <p style="margin:0 0 8px;font-size:14px;color:#f0f4f8;">
+            <strong>Subtotal:</strong> PHP {{ order.subtotal }}
+          </p>
+          <p style="margin:0 0 8px;font-size:14px;color:#f0f4f8;">
+            <strong>Shipping:</strong> PHP {{ order.shipping_cost }}
+          </p>
+          <p style="margin:0 0 8px;font-size:14px;color:#f0f4f8;">
+            <strong>Discount:</strong> PHP {{ order.discount_amount }}
+          </p>
+          <p style="margin:8px 0 0;font-size:18px;color:#f5c842;">
+            <strong>Total:</strong> PHP {{ order.total }}
+          </p>
+        </div>
+
+        <div style="padding:18px;border-radius:18px;background:#1e2d42;">
+          <p style="margin:0 0 8px;color:#7a90a8;font-size:12px;letter-spacing:1.8px;text-transform:uppercase;">
+            Shipping Address
+          </p>
+          <p style="margin:0;font-size:14px;line-height:1.8;color:#f0f4f8;">
+            {{ order.shipping_full_name }}<br>
+            {{ order.shipping_line1 }}{% if order.shipping_line2 %}, {{ order.shipping_line2 }}{% endif %}<br>
+            {{ order.shipping_city }}, {{ order.shipping_province }} {{ order.shipping_zip }}<br>
+            {{ order.shipping_country }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,163 +1,143 @@
-import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, User, Search, Menu, X, Sword } from "lucide-react";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  ChevronDown,
+  LogOut,
+  Menu,
+  ShoppingCart,
+  X,
+} from "lucide-react";
+import { authAPI } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
 import { useCartStore } from "../../store/cartStore";
-import { authAPI } from "../../api/auth";
 import { useUIStore } from "../../store/uiStore";
+import MobileMenu from "./MobileMenu";
+import SearchBar from "../products/SearchBar";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const { user, accessToken, logout, refreshToken } = useAuthStore();
-  const { itemCount } = useCartStore();
+  const { itemCount, clearCart } = useCartStore();
   const { addToast } = useUIStore();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
       await authAPI.logout(refreshToken);
-    } catch {}
+    } catch {
+      // Ignore backend logout failures and clear local state.
+    }
+
     logout();
+    clearCart();
+    setMobileOpen(false);
     addToast("Logged out successfully.", "success");
     navigate("/");
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery("");
+  const handleSearch = (query) => {
+    setMobileOpen(false);
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    } else {
+      navigate("/products");
     }
   };
 
-  return (
-    <nav className="bg-primary-700 text-white sticky top-0 z-40 shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+  const initials = user?.first_name?.[0] || user?.email?.[0] || "D";
 
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl">
-            <Sword className="h-6 w-6 text-accent-400" />
-            <span>TCG <span className="text-accent-400">Store</span></span>
+  return (
+    <>
+      <nav className="sticky top-0 z-50 border-b border-drac-border bg-drac-bg/85 backdrop-blur-xl">
+        <div className="page-shell flex h-20 items-center justify-between gap-4">
+          <Link to="/" className="navbar-brand flex shrink-0 items-center w-32 sm:w-36">
+            <img
+              src="/DracNest-PNG.png"
+              alt="DracNest"
+              className="object-contain"
+            />
           </Link>
 
-          {/* Search — desktop */}
-          <form onSubmit={handleSearch}
-            className="hidden md:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search cards, sets, games..."
-                className="w-full bg-primary-900 text-white placeholder-gray-400
-                  rounded-full pl-10 pr-4 py-2 text-sm
-                  focus:outline-none focus:ring-2 focus:ring-accent-400"
-              />
-            </div>
-          </form>
+          <SearchBar onSubmit={handleSearch} className="hidden flex-1 md:block" />
 
-          {/* Nav links — desktop */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link to="/products"
-              className="text-sm font-medium text-gray-200 hover:text-white transition-colors">
-              Browse Cards
+          <div className="hidden items-center gap-5 md:flex">
+            <Link to="/products" className="text-sm font-semibold uppercase tracking-[0.16em] text-drac-muted hover:text-drac-gold">
+              Shop
             </Link>
-
-            {/* Cart */}
-            <Link to="/cart" className="relative">
-              <ShoppingCart className="h-6 w-6 text-gray-200 hover:text-white transition-colors" />
-              {itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-accent-500 text-white
-                  text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+            <Link to="/products?product_type=BOX" className="text-sm font-semibold uppercase tracking-[0.16em] text-drac-muted hover:text-drac-gold">
+              Sealed
+            </Link>
+            <Link to="/cart" className="relative rounded-full border border-drac-border bg-drac-surface p-3 text-drac-text hover:border-drac-gold/50">
+              <ShoppingCart className="h-5 w-5" />
+              {itemCount > 0 ? (
+                <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-drac-gold text-[10px] font-bold text-drac-bg">
                   {itemCount > 9 ? "9+" : itemCount}
                 </span>
-              )}
+              ) : null}
             </Link>
-
-            {/* User */}
             {accessToken ? (
-              <div className="relative group">
-                <button className="flex items-center gap-2 text-sm font-medium
-                  text-gray-200 hover:text-white transition-colors">
-                  <User className="h-5 w-5" />
-                  <span>{user?.first_name}</span>
+              <div className="group relative">
+                <button type="button" className="flex items-center gap-3 rounded-full border border-drac-border bg-drac-surface px-3 py-2 text-sm font-medium text-drac-text">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-drac-gold font-semibold text-drac-bg">
+                    {initials.toUpperCase()}
+                  </span>
+                  <span className="max-w-24 truncate">{user?.first_name || "Trainer"}</span>
+                  <ChevronDown className="h-4 w-4 text-drac-muted" />
                 </button>
-                {/* Dropdown */}
-                <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl
-                  shadow-xl border border-gray-100 opacity-0 invisible
-                  group-hover:opacity-100 group-hover:visible transition-all">
-                  <Link to="/account"
-                    className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-t-xl">
+                <div className="invisible absolute right-0 mt-3 w-56 translate-y-2 rounded-2xl border border-drac-border bg-drac-surface p-2 opacity-0 shadow-2xl transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                  <Link to="/account" className="block rounded-xl px-4 py-3 text-sm text-drac-text hover:bg-white/5">
                     My Account
                   </Link>
-                  <Link to="/account/orders"
-                    className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                  <Link to="/account/profile" className="block rounded-xl px-4 py-3 text-sm text-drac-text hover:bg-white/5">
+                    Profile
+                  </Link>
+                  <Link to="/account/orders" className="block rounded-xl px-4 py-3 text-sm text-drac-text hover:bg-white/5">
                     My Orders
                   </Link>
-                  <button onClick={handleLogout}
-                    className="w-full text-left px-4 py-2.5 text-sm text-red-500
-                      hover:bg-red-50 rounded-b-xl">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2 rounded-xl px-4 py-3 text-left text-sm text-drac-red hover:bg-drac-red/10"
+                  >
+                    <LogOut className="h-4 w-4" />
                     Logout
                   </button>
                 </div>
               </div>
             ) : (
-              <Link to="/login"
-                className="bg-accent-500 hover:bg-accent-600 text-white
-                  text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-                Login
+              <Link to="/login" className="btn-primary">
+                Sign In
               </Link>
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <button className="md:hidden"
-            onClick={() => setMobileOpen(!mobileOpen)}>
-            {mobileOpen
-              ? <X className="h-6 w-6" />
-              : <Menu className="h-6 w-6" />}
-          </button>
+          <div className="flex items-center gap-3 md:hidden">
+            <Link to="/cart" className="relative rounded-full border border-drac-border bg-drac-surface p-3 text-drac-text">
+              <ShoppingCart className="h-5 w-5" />
+              {itemCount > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-drac-gold text-[10px] font-bold text-drac-bg">
+                  {itemCount > 9 ? "9+" : itemCount}
+                </span>
+              ) : null}
+            </Link>
+            <button
+              type="button"
+              className="rounded-full border border-drac-border bg-drac-surface p-3"
+              onClick={() => setMobileOpen((current) => !current)}
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden bg-primary-900 border-t border-primary-500 px-4 py-4 space-y-3">
-          <form onSubmit={handleSearch}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search..."
-                className="w-full bg-primary-700 text-white placeholder-gray-400
-                  rounded-full pl-10 pr-4 py-2 text-sm focus:outline-none"
-              />
-            </div>
-          </form>
-          <Link to="/products" onClick={() => setMobileOpen(false)}
-            className="block text-sm text-gray-200 py-2">Browse Cards</Link>
-          <Link to="/cart" onClick={() => setMobileOpen(false)}
-            className="block text-sm text-gray-200 py-2">
-            Cart {itemCount > 0 && `(${itemCount})`}
-          </Link>
-          {accessToken ? (
-            <>
-              <Link to="/account" onClick={() => setMobileOpen(false)}
-                className="block text-sm text-gray-200 py-2">My Account</Link>
-              <button onClick={handleLogout}
-                className="block text-sm text-red-400 py-2">Logout</button>
-            </>
-          ) : (
-            <Link to="/login" onClick={() => setMobileOpen(false)}
-              className="block text-sm text-accent-400 py-2 font-semibold">Login</Link>
-          )}
-        </div>
-      )}
-    </nav>
+      <MobileMenu
+        open={mobileOpen}
+        authenticated={Boolean(accessToken)}
+        itemCount={itemCount}
+        onClose={() => setMobileOpen(false)}
+        onLogout={handleLogout}
+      />
+    </>
   );
 }

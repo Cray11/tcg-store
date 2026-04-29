@@ -28,7 +28,7 @@ class ProductAdmin(admin.ModelAdmin):
             "fields": ("set_name", "set_code", "card_number", "rarity", "condition", "language", "is_foil", "is_first_edition")
         }),
         ("Images", {
-            "fields": ("image", "image_back")
+            "fields": ("image_url", "image_back_url")
         }),
         ("Flags & Dates", {
             "fields": ("is_active", "is_featured", "created_at", "updated_at")
