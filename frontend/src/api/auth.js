@@ -8,4 +8,10 @@ export const authAPI = {
   updateProfile: (data) => api.patch("/auth/profile/", data),
   changePassword: (data) => api.post("/auth/password/change/", data),
   resetPassword: (email) => api.post("/auth/password/reset/", { email }),
+  resetPasswordConfirm: (data) => api.post("/auth/password/reset/confirm/", data),
+  getAddresses: () => api.get("/auth/addresses/"),
+  createAddress: (data) => api.post("/auth/addresses/", data),
+  updateAddress: (id, data) => api.patch(`/auth/addresses/${id}/`, data),
+  deleteAddress: (id) => api.delete(`/auth/addresses/${id}/`),
+  setDefaultAddress: (id) => api.patch(`/auth/addresses/${id}/set-default/`),
 };

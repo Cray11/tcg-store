@@ -1,5 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from .models import CustomUser, Address
 
 
@@ -39,6 +42,29 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs["new_password"] != attrs["new_password2"]:
             raise serializers.ValidationError({"new_password": "Passwords do not match."})
+        return attrs
+
+
+class ResetPasswordConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True, validators=[validate_password])
+    new_password2 = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["new_password2"]:
+            raise serializers.ValidationError({"new_password": "Passwords do not match."})
+
+        try:
+            user_id = force_str(urlsafe_base64_decode(attrs["uid"]))
+            user = CustomUser.objects.get(pk=user_id)
+        except (CustomUser.DoesNotExist, TypeError, ValueError, OverflowError):
+            raise serializers.ValidationError({"uid": "Invalid reset link."})
+
+        if not default_token_generator.check_token(user, attrs["token"]):
+            raise serializers.ValidationError({"token": "Invalid or expired reset token."})
+
+        attrs["user"] = user
         return attrs
 
 

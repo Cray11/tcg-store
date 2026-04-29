@@ -10,6 +10,7 @@ urlpatterns = [
     path("profile/", views.ProfileView.as_view(), name="profile"),
     path("password/change/", views.change_password_view, name="change_password"),
     path("password/reset/", views.password_reset_request, name="password_reset"),
+    path("password/reset/confirm/", views.password_reset_confirm, name="password_reset_confirm"),
     path("addresses/", views.AddressListCreateView.as_view(), name="address_list"),
     path("addresses/<uuid:pk>/", views.AddressDetailView.as_view(), name="address_detail"),
     path("addresses/<uuid:pk>/set-default/", views.set_default_address, name="set_default_address"),

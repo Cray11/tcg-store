@@ -17,12 +17,14 @@ def cart_response(cart):
 
 
 @api_view(["GET"])
+@permission_classes([permissions.AllowAny])
 def get_cart(request):
     cart = get_or_create_cart(request)
     return cart_response(cart)
 
 
 @api_view(["POST"])
+@permission_classes([permissions.AllowAny])
 def add_to_cart(request):
     serializer = AddToCartSerializer(data=request.data)
     if not serializer.is_valid():
@@ -39,7 +41,11 @@ def add_to_cart(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     cart = get_or_create_cart(request)
-    item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+    item, created = CartItem.objects.get_or_create(
+        cart=cart,
+        product=product,
+        defaults={"quantity": quantity},
+    )
 
     if not created:
         new_qty = item.quantity + quantity
@@ -56,6 +62,7 @@ def add_to_cart(request):
 
 
 @api_view(["PATCH"])
+@permission_classes([permissions.AllowAny])
 def update_cart_item(request, pk):
     serializer = UpdateCartItemSerializer(data=request.data)
     if not serializer.is_valid():
@@ -78,6 +85,7 @@ def update_cart_item(request, pk):
 
 
 @api_view(["DELETE"])
+@permission_classes([permissions.AllowAny])
 def remove_cart_item(request, pk):
     cart = get_or_create_cart(request)
     item = get_object_or_404(CartItem, pk=pk, cart=cart)
@@ -86,6 +94,7 @@ def remove_cart_item(request, pk):
 
 
 @api_view(["POST"])
+@permission_classes([permissions.AllowAny])
 def clear_cart(request):
     cart = get_or_create_cart(request)
     cart.items.all().delete()

@@ -14,6 +14,13 @@ class CategoryListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
     queryset = Category.objects.filter(is_active=True)
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        game = self.request.query_params.get("game")
+        if game:
+            queryset = queryset.filter(game__iexact=game)
+        return queryset
+
 
 class ProductListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -63,6 +70,10 @@ class FeaturedProductsView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return Product.objects.filter(
+        queryset = Product.objects.filter(
             is_active=True, is_featured=True
-        ).select_related("category")[:12]
+        ).select_related("category")
+        game = self.request.query_params.get("game")
+        if game:
+            queryset = queryset.filter(category__game__iexact=game)
+        return queryset[:12]

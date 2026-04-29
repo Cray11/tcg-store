@@ -85,8 +85,8 @@ class Product(models.Model):
     product_type = models.CharField(max_length=30, choices=PRODUCT_TYPE_CHOICES, default="SINGLE")
 
     # Images
-    image = models.CharField(max_length=500, blank=True)
-    image_back = models.CharField(max_length=500, blank=True)
+    image_url = models.CharField(max_length=500, blank=True)
+    image_back_url = models.CharField(max_length=500, blank=True)
 
     # Flags
     is_active = models.BooleanField(default=True)

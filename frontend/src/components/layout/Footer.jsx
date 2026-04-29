@@ -1,54 +1,67 @@
+import { CreditCard, ShieldCheck, WalletCards } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Sword } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-primary-900 text-gray-300 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-
-          {/* Brand */}
-          <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-2 font-bold text-xl text-white mb-3">
-              <Sword className="h-5 w-5 text-accent-400" />
-              <span>TCG <span className="text-accent-400">Store</span></span>
-            </div>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              Your one-stop shop for Pokémon, Magic: The Gathering,
-              and Yu-Gi-Oh! singles, packs, and sealed products.
+    <footer className="mt-auto border-t border-drac-border bg-[#09121d]">
+      <div className="page-shell py-12">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(0,1fr))]">
+          <div>
+            <img
+              src="/DracNest-PNG.png"
+              alt="DracNest"
+              className="h-auto w-40 object-contain"
+            />
+            <p className="mt-4 max-w-md text-sm leading-7 text-drac-muted">
+              Philippines&apos; premium Pokemon Trading Card Game store for
+              collector-grade singles, sealed product drops, and checkout flows
+              built for serious trainers.
             </p>
+            <div className="mt-6 flex flex-wrap gap-3 text-xs text-drac-muted">
+              <span className="badge bg-drac-surface2 text-drac-text">
+                <CreditCard className="h-3.5 w-3.5" />
+                Visa
+              </span>
+              <span className="badge bg-drac-surface2 text-drac-text">
+                <WalletCards className="h-3.5 w-3.5" />
+                Mastercard
+              </span>
+              <span className="badge bg-drac-surface2 text-drac-text">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                GCash
+              </span>
+            </div>
           </div>
 
-          {/* Shop */}
           <div>
-            <h4 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">
-              Shop
-            </h4>
-            <ul className="space-y-2 text-sm">
-              {["Pokémon", "Magic: The Gathering", "Yu-Gi-Oh!", "Booster Boxes"].map((item) => (
-                <li key={item}>
-                  <Link to="/products"
-                    className="hover:text-accent-400 transition-colors">{item}</Link>
+            <h4 className="section-kicker mb-4">Shop</h4>
+            <ul className="space-y-3 text-sm text-drac-muted">
+              {[
+                { label: "Singles", to: "/products?product_type=SINGLE" },
+                { label: "Booster Packs", to: "/products?product_type=PACK" },
+                { label: "Sealed Boxes", to: "/products?product_type=BOX" },
+                { label: "Bundles & Tins", to: "/products?product_type=BUNDLE" },
+              ].map((item) => (
+                <li key={item.label}>
+                  <Link to={item.to} className="hover:text-drac-gold">
+                    {item.label}
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Account */}
           <div>
-            <h4 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">
-              Account
-            </h4>
-            <ul className="space-y-2 text-sm">
+            <h4 className="section-kicker mb-4">Support</h4>
+            <ul className="space-y-3 text-sm text-drac-muted">
               {[
                 { label: "My Account", to: "/account" },
                 { label: "My Orders", to: "/account/orders" },
-                { label: "Cart", to: "/cart" },
+                { label: "Checkout", to: "/checkout/shipping" },
                 { label: "Login", to: "/login" },
               ].map((item) => (
                 <li key={item.label}>
-                  <Link to={item.to}
-                    className="hover:text-accent-400 transition-colors">
+                  <Link to={item.to} className="hover:text-drac-gold">
                     {item.label}
                   </Link>
                 </li>
@@ -57,8 +70,9 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-primary-700 mt-8 pt-6 text-center text-xs text-gray-500">
-          © {new Date().getFullYear()} TCG Store. All rights reserved.
+        <div className="mt-8 flex flex-col gap-4 border-t border-drac-border pt-6 text-xs text-drac-muted md:flex-row md:items-center md:justify-between">
+          <p>&copy; 2026 DracNest. All rights reserved.</p>
+          <p>Catch them. Collect them. Dominate.</p>
         </div>
       </div>
     </footer>

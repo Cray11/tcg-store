@@ -21,7 +21,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = [
             "id", "name", "slug", "price", "compare_price", "discount_percent",
             "stock", "is_in_stock", "is_low_stock", "condition", "rarity",
-            "product_type", "image", "is_featured", "category_name", "game",
+            "product_type", "image_url", "is_featured", "category_name", "game",
             "set_name", "language", "is_foil",
         ]
 
@@ -29,6 +29,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 class ProductDetailSerializer(serializers.ModelSerializer):
     """Full serializer for PDP."""
     category = CategorySerializer(read_only=True)
+    game = serializers.CharField(source="category.game", read_only=True)
     is_in_stock = serializers.ReadOnlyField()
     is_low_stock = serializers.ReadOnlyField()
     discount_percent = serializers.ReadOnlyField()

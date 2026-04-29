@@ -18,15 +18,21 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+    if (error.response?.status === 401 && original && !original._retry) {
       original._retry = true;
       try {
         const refreshToken = useAuthStore.getState().refreshToken;
+        if (!refreshToken) {
+          throw new Error("Missing refresh token");
+        }
+
         const { data } = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/auth/token/refresh/`,
           { refresh: refreshToken }
         );
-        useAuthStore.getState().setTokens(data.access, refreshToken);
+
+        const nextRefreshToken = data.refresh ?? refreshToken;
+        useAuthStore.getState().setTokens(data.access, nextRefreshToken);
         original.headers.Authorization = `Bearer ${data.access}`;
         return api(original);
       } catch {

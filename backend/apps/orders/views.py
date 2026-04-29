@@ -7,9 +7,12 @@ from .models import Order, OrderItem, PromoCode
 from .serializers import OrderSerializer, CreateOrderSerializer, AdminUpdateOrderSerializer
 from apps.users.models import Address
 from apps.cart.models import Cart
-from apps.notifications.emails import send_order_confirmation_email
+from apps.orders.utils import restore_order_inventory
+import stripe
+from django.conf import settings
 
 SHIPPING_COSTS = {"STANDARD": 99, "EXPRESS": 199}
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 @api_view(["POST"])
@@ -55,16 +58,14 @@ def create_order(request):
 
     total = subtotal + shipping_cost - discount_amount
 
-    with transaction.atomic():
-        # Re-check stock with lock
-        for item in cart.items.select_related("product").select_for_update():
-            if item.product.stock < item.quantity:
-                return Response({
-                    "data": None,
-                    "errors": {"stock": f"'{item.product.name}' only has {item.product.stock} left."}
-                }, status=status.HTTP_409_CONFLICT)
+    for item in cart.items.select_related("product").all():
+        if item.product.stock < item.quantity:
+            return Response({
+                "data": None,
+                "errors": {"stock": f"'{item.product.name}' only has {item.product.stock} left."}
+            }, status=status.HTTP_409_CONFLICT)
 
-        # Create order
+    with transaction.atomic():
         order = Order.objects.create(
             user=request.user,
             status="PENDING",
@@ -92,26 +93,17 @@ def create_order(request):
                 product=item.product,
                 product_name=item.product.name,
                 product_sku=item.product.sku,
-                product_image=item.product.image,
+                product_image=item.product.image_url,
                 product_condition=item.product.condition,
                 product_set=item.product.set_name,
                 quantity=item.quantity,
                 unit_price=item.product.price,
                 total_price=item.line_total,
             )
-            item.product.stock -= item.quantity
-            item.product.save()
 
-        if promo:
-            promo.uses_count += 1
-            promo.save()
-
-        cart.items.all().delete()
-
-    send_order_confirmation_email(order)
     return Response({
         "data": OrderSerializer(order).data,
-        "message": "Order created successfully.",
+        "message": "Order created. Complete payment to finalize it.",
         "errors": None,
     }, status=status.HTTP_201_CREATED)
 
@@ -140,20 +132,38 @@ class OrderDetailView(generics.RetrieveAPIView):
 @permission_classes([permissions.IsAuthenticated])
 def cancel_order(request, pk):
     order = get_object_or_404(Order, pk=pk, user=request.user)
-    if order.status not in ["PENDING", "PROCESSING"]:
+    if order.status != "PENDING":
         return Response({
             "data": None,
             "errors": {"status": f"Order in '{order.status}' status cannot be cancelled."}
         }, status=status.HTTP_400_BAD_REQUEST)
 
     with transaction.atomic():
+        payment = getattr(order, "payment", None)
+
+        if payment and payment.status == "SUCCEEDED":
+            return Response({
+                "data": None,
+                "errors": {"status": "Paid orders cannot be cancelled automatically."}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         order.status = "CANCELLED"
         order.save()
-        # Restore stock
-        for item in order.items.select_related("product").all():
-            if item.product:
-                item.product.stock += item.quantity
-                item.product.save()
+
+        if payment:
+            if payment.inventory_reserved:
+                restore_order_inventory(order)
+                payment.inventory_reserved = False
+
+            if payment.status == "PENDING" and payment.stripe_payment_intent:
+                try:
+                    stripe.PaymentIntent.cancel(payment.stripe_payment_intent)
+                except stripe.error.StripeError:
+                    pass
+
+            payment.status = "FAILED"
+            payment.failure_message = "Order cancelled by user."
+            payment.save(update_fields=["status", "failure_message", "inventory_reserved", "updated_at"])
 
     return Response({
         "data": OrderSerializer(order).data,
