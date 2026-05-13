@@ -6,6 +6,7 @@ django-filter==24.2
 cloudinary==1.40.0
 django-cloudinary-storage==0.3.0
 dj-database-url==2.2.0
+psycopg[binary]==3.2.13
 python-dotenv==1.0.1
 Pillow==12.2.0
 gunicorn==22.0.0
