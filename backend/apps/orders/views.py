@@ -8,11 +8,8 @@ from .serializers import OrderSerializer, CreateOrderSerializer, AdminUpdateOrde
 from apps.users.models import Address
 from apps.cart.models import Cart
 from apps.orders.utils import restore_order_inventory
-import stripe
-from django.conf import settings
 
 SHIPPING_COSTS = {"STANDARD": 99, "EXPRESS": 199}
-stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 @api_view(["POST"])
@@ -86,7 +83,7 @@ def create_order(request):
             shipping_country=address.country,
         )
 
-        # Create order items & deduct stock
+        # Snapshot order items now; inventory is reserved when payment starts.
         for item in cart.items.select_related("product").all():
             OrderItem.objects.create(
                 order=order,
@@ -115,7 +112,7 @@ class OrderListView(generics.ListAPIView):
     def get_queryset(self):
         return Order.objects.filter(
             user=self.request.user
-        ).prefetch_related("items").order_by("-created_at")
+        ).prefetch_related("items").select_related("payment").order_by("-created_at")
 
 
 class OrderDetailView(generics.RetrieveAPIView):
@@ -125,7 +122,7 @@ class OrderDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         return Order.objects.filter(
             user=self.request.user
-        ).prefetch_related("items")
+        ).prefetch_related("items").select_related("payment")
 
 
 @api_view(["PATCH"])
@@ -155,12 +152,6 @@ def cancel_order(request, pk):
                 restore_order_inventory(order)
                 payment.inventory_reserved = False
 
-            if payment.status == "PENDING" and payment.stripe_payment_intent:
-                try:
-                    stripe.PaymentIntent.cancel(payment.stripe_payment_intent)
-                except stripe.error.StripeError:
-                    pass
-
             payment.status = "FAILED"
             payment.failure_message = "Order cancelled by user."
             payment.save(update_fields=["status", "failure_message", "inventory_reserved", "updated_at"])
@@ -176,7 +167,7 @@ def cancel_order(request, pk):
 class AdminOrderListView(generics.ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAdminUser]
-    queryset = Order.objects.prefetch_related("items").select_related("user").order_by("-created_at")
+    queryset = Order.objects.prefetch_related("items").select_related("user", "payment").order_by("-created_at")
     filterset_fields = ["status"]
     search_fields = ["order_number", "user__email", "shipping_full_name"]
 

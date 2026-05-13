@@ -3,7 +3,16 @@ from .models import Payment
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
-    list_display = ["stripe_payment_intent", "order", "amount", "status", "created_at"]
-    list_filter = ["status", "currency"]
-    search_fields = ["stripe_payment_intent", "order__order_number"]
-    readonly_fields = ["stripe_payment_intent", "order", "amount", "currency", "created_at", "updated_at"]
+    list_display = ["payment_reference", "provider", "order", "amount", "status", "created_at"]
+    list_filter = ["provider", "status", "currency"]
+    search_fields = ["payment_reference", "transaction_reference", "order__order_number"]
+    readonly_fields = [
+        "provider",
+        "payment_reference",
+        "transaction_reference",
+        "order",
+        "amount",
+        "currency",
+        "created_at",
+        "updated_at",
+    ]

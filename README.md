@@ -7,7 +7,7 @@ DracNest is a demo-ready Pokemon Trading Card Game e-commerce platform built wit
 - Pokemon-only storefront and product catalog
 - Authentication and account management
 - Product listing, detail, cart, and checkout flow
-- Demo payment simulation with invoice email
+- Structured demo checkout with invoice email
 - Admin panel for managing products and backend data
 - One-time importer for the `Perfect Order` set from PkmnCards
 
@@ -15,7 +15,7 @@ DracNest is a demo-ready Pokemon Trading Card Game e-commerce platform built wit
 
 - Backend: Django, Django REST Framework, SimpleJWT, django-filter
 - Frontend: React 18, Vite, Tailwind CSS, Zustand, Axios
-- Payments: Stripe-ready flow plus demo payment simulation
+- Payments: Structured demo checkout with invoice email simulation
 - Database: SQLite for local development
 
 ## Project Structure
@@ -116,7 +116,7 @@ Notes:
 
 - Local development uses SQLite from `config.settings.development`
 - Email defaults to console output in development
-- Stripe keys are optional if you only want the demo payment flow
+- No external payment gateway credentials are required for the demo checkout
 
 ### Run migrations
 
@@ -171,12 +171,6 @@ If you want to bypass the Vite proxy and call Django directly, use:
 VITE_API_BASE_URL=http://localhost:8000/api
 ```
 
-Optional:
-
-```env
-VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
-```
-
 ### Start the frontend server
 
 ```bash
@@ -211,17 +205,17 @@ What it does:
 
 ## 5. Demo Payment Flow
 
-The checkout includes a working demo payment simulation.
+The checkout includes a working demo payment flow.
 
 How it works:
 
 - Create an order through checkout
-- Click `Continue Payment` on the payment page
-- The backend simulates a successful payment
-- The order is marked paid/processing
+- The payment page prepares a pending demo payment and reserves inventory
+- Click `Complete Demo Payment` on the payment page
+- The backend records the payment as successful and moves the order into processing
 - An invoice-style email is sent through the configured backend email sender
 
-You do not need live Stripe credentials to demo the full checkout experience.
+You do not need any live gateway credentials to demo the full checkout experience.
 
 ## 6. Testing and Verification
 

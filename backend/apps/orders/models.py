@@ -34,7 +34,7 @@ class PromoCode(models.Model):
         if self.max_uses and self.uses_count >= self.max_uses:
             return False, "Promo code has reached its usage limit."
         if order_subtotal < self.min_order_amount:
-            return False, f"Minimum order of ₱{self.min_order_amount} required."
+            return False, f"Minimum order of PHP {self.min_order_amount} required."
         return True, "Valid."
 
 

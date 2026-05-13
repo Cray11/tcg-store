@@ -2,7 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("create-intent/", views.create_payment_intent, name="create_payment_intent"),
-    path("simulate-success/", views.simulate_payment_success, name="simulate_payment_success"),
-    path("webhook/", views.stripe_webhook, name="stripe_webhook"),
+    path("prepare/", views.prepare_demo_payment, name="prepare_demo_payment"),
+    path("complete/", views.complete_demo_payment, name="complete_demo_payment"),
 ]

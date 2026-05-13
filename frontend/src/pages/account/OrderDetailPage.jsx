@@ -96,7 +96,7 @@ export default function OrderDetailPage() {
                   <div>
                     <p className="text-sm font-semibold text-drac-text">{item.product_name}</p>
                     <p className="mt-1 text-xs uppercase tracking-[0.16em] text-drac-muted">
-                      {item.product_sku} • {item.product_condition || "N/A"}
+                      {item.product_sku} | {item.product_condition || "N/A"}
                     </p>
                   </div>
                   <div className="text-right">
@@ -147,6 +147,38 @@ export default function OrderDetailPage() {
               <br />
               {order.shipping_country}
             </p>
+          </div>
+
+          <div className="drac-panel p-6">
+            <p className="section-kicker">Payment</p>
+            {order.payment_summary ? (
+              <div className="mt-4 space-y-3 text-sm text-drac-muted">
+                <div className="flex items-center justify-between gap-4">
+                  <span>Method</span>
+                  <span className="text-drac-text">{order.payment_summary.provider_label}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span>Status</span>
+                  <span className="text-drac-text">{order.payment_summary.status}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span>Receipt Email</span>
+                  <span className="break-all text-right text-drac-text">
+                    {order.payment_summary.receipt_email}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span>Reference</span>
+                  <span className="break-all text-right font-mono text-xs text-drac-text">
+                    {order.payment_summary.reference}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-drac-muted">
+                Payment has not been completed yet for this order.
+              </p>
+            )}
           </div>
 
           {order.tracking_number ? (

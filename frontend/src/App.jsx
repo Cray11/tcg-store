@@ -83,22 +83,43 @@ export default function App() {
 
 function AppShell() {
   const location = useLocation();
-  const { accessToken, updateUser, logout } = useAuthStore();
+  const { accessToken, hasHydrated, updateUser, logout } = useAuthStore();
   const { setCart, clearCart } = useCartStore();
   const { setPageLoading } = useUIStore();
 
   useEffect(() => {
+    if (!hasHydrated) {
+      return undefined;
+    }
+
     let active = true;
 
     async function bootstrapSession() {
-      if (!accessToken) {
-        setPageLoading(false);
-        clearCart();
-        return;
-      }
+      const showLoader = Boolean(accessToken);
 
-      setPageLoading(true);
+      if (showLoader) {
+        setPageLoading(true);
+      } else {
+        setPageLoading(false);
+      }
       try {
+        if (!accessToken) {
+          updateUser(null);
+
+          try {
+            const cartResponse = await cartAPI.getCart();
+            if (!active) {
+              return;
+            }
+            setCart(getPayload(cartResponse));
+          } catch {
+            if (active) {
+              clearCart();
+            }
+          }
+          return;
+        }
+
         const [profileResponse, cartResponse] = await Promise.allSettled([
           authAPI.getProfile(),
           cartAPI.getCart(),
@@ -116,9 +137,11 @@ function AppShell() {
 
         if (cartResponse.status === "fulfilled") {
           setCart(getPayload(cartResponse.value));
+        } else {
+          clearCart();
         }
       } finally {
-        if (active) {
+        if (active && showLoader) {
           setPageLoading(false);
         }
       }
@@ -129,7 +152,7 @@ function AppShell() {
     return () => {
       active = false;
     };
-  }, [accessToken, clearCart, logout, setCart, setPageLoading, updateUser]);
+  }, [accessToken, clearCart, hasHydrated, logout, setCart, setPageLoading, updateUser]);
 
   return (
     <div className="flex min-h-screen flex-col">

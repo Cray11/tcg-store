@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -10,33 +8,28 @@ import {
 import { useNavigate } from "react-router-dom";
 import { ordersAPI } from "../../api/orders";
 import { paymentsAPI } from "../../api/payments";
+import { cartAPI } from "../../api/cart";
 import { useCartStore } from "../../store/cartStore";
 import { useUIStore } from "../../store/uiStore";
 import { getErrorMessage, getPayload, getMessage } from "../../utils/api";
 import { formatCurrency } from "../../utils/formatCurrency";
 import CheckoutLayout from "./CheckoutLayout";
 import Button from "../../components/ui/Button";
-import StripePaymentForm from "../../components/checkout/StripePaymentForm";
 import Spinner from "../../components/ui/Spinner";
 import { SHIPPING_OPTIONS } from "../../utils/constants";
 import { useAuthStore } from "../../store/authStore";
 
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
-  : null;
-
 export default function PaymentPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { cart } = useCartStore();
+  const { cart, setCart } = useCartStore();
   const { checkoutDraft, setCheckoutDraft, addToast } = useUIStore();
   const [order, setOrder] = useState(null);
-  const [clientSecret, setClientSecret] = useState("");
+  const [paymentDetails, setPaymentDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [stripeWarning, setStripeWarning] = useState("");
 
   const shippingAmount = useMemo(
     () => SHIPPING_OPTIONS.find((option) => option.value === checkoutDraft.shippingMethod)?.amount ?? 99,
@@ -54,7 +47,6 @@ export default function PaymentPage() {
 
       setLoading(true);
       setError("");
-      setStripeWarning("");
 
       try {
         let orderData;
@@ -81,31 +73,18 @@ export default function PaymentPage() {
 
         setOrder(orderData);
 
-        if (stripePromise) {
-          try {
-            const intentResponse = await paymentsAPI.createPaymentIntent(orderId);
-            if (!active) {
-              return;
-            }
-            setClientSecret(getPayload(intentResponse).client_secret);
-            setMessage(getMessage(intentResponse));
-          } catch (requestError) {
-            if (!active) {
-              return;
-            }
-            setStripeWarning(
-              getErrorMessage(
-                requestError,
-                "Stripe could not be prepared, but the demo payment flow is still available."
-              )
-            );
-          }
+        const prepareResponse = await paymentsAPI.prepareDemoPayment(orderId);
+        if (!active) {
+          return;
         }
+
+        setPaymentDetails(getPayload(prepareResponse));
+        setMessage(getMessage(prepareResponse));
       } catch (requestError) {
         if (!active) {
           return;
         }
-        const nextError = getErrorMessage(requestError, "Unable to prepare payment.");
+        const nextError = getErrorMessage(requestError, "Unable to prepare demo checkout.");
         setError(nextError);
         addToast(nextError, "error");
       } finally {
@@ -129,11 +108,17 @@ export default function PaymentPage() {
 
     setDemoLoading(true);
     try {
-      const response = await paymentsAPI.simulatePaymentSuccess(order.id);
+      const response = await paymentsAPI.completeDemoPayment(order.id);
+      try {
+        const cartResponse = await cartAPI.getCart();
+        setCart(getPayload(cartResponse));
+      } catch {
+        // Leave the current cart state alone if the refresh fails.
+      }
       addToast(getMessage(response) || "Demo payment completed.", "success");
       navigate(`/checkout/success?order=${order.id}`);
     } catch (requestError) {
-      addToast(getErrorMessage(requestError, "Unable to simulate payment."), "error");
+      addToast(getErrorMessage(requestError, "Unable to complete demo payment."), "error");
     } finally {
       setDemoLoading(false);
     }
@@ -143,7 +128,7 @@ export default function PaymentPage() {
     <CheckoutLayout
       currentStep="payment"
       title="Payment"
-      subtitle="Use the demo payment simulator to send an invoice email and complete checkout, or keep the live Stripe path when keys are configured."
+      subtitle="Review the prepared demo payment, send the invoice email, and complete checkout."
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
@@ -159,7 +144,7 @@ export default function PaymentPage() {
                 <AlertTriangle className="mt-0.5 h-5 w-5 text-drac-red" />
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.16em] text-drac-red">
-                    Payment Setup Failed
+                    Demo Checkout Failed
                   </p>
                   <p className="mt-2 text-sm leading-7 text-drac-muted">{error}</p>
                 </div>
@@ -185,19 +170,19 @@ export default function PaymentPage() {
                 {message ? <p className="mt-3 text-sm text-drac-muted">{message}</p> : null}
               </div>
 
-              <div className="drac-panel p-6">
+              <div className="drac-panel border-drac-green/30 p-6">
                 <div className="flex items-start gap-4">
                   <div className="rounded-full border border-drac-green/30 bg-drac-green/10 p-3 text-drac-green">
                     <CheckCircle2 className="h-6 w-6" />
                   </div>
                   <div className="flex-1">
-                    <p className="section-kicker">Demo Payment Simulation</p>
+                    <p className="section-kicker">Demo Checkout</p>
                     <h3 className="mt-2 font-heading text-3xl tracking-[0.14em] text-drac-gold">
-                      Continue Payment
+                      Complete Payment
                     </h3>
                     <p className="mt-3 text-sm leading-7 text-drac-muted">
-                      This simulates a successful payment, marks the order as paid, and sends an
-                      invoice-style email using your configured no-reply sender.
+                      This structured demo flow reserves inventory, records a payment reference,
+                      sends an invoice-style email, and advances the order into processing.
                     </p>
                     <div className="mt-5 rounded-2xl border border-drac-border bg-drac-surface2 p-4">
                       <div className="flex items-center gap-3 text-sm text-drac-text">
@@ -208,6 +193,20 @@ export default function PaymentPage() {
                         <ShieldCheck className="h-4 w-4 text-drac-gold" />
                         Sender uses `DEFAULT_FROM_EMAIL` from your backend email config
                       </div>
+                      {paymentDetails ? (
+                        <div className="mt-4 grid gap-3 rounded-2xl border border-drac-border/80 bg-drac-surface px-4 py-3 text-sm text-drac-muted sm:grid-cols-2">
+                          <div>
+                            <p className="section-kicker">Reference</p>
+                            <p className="mt-2 break-all font-mono text-xs text-drac-text">
+                              {paymentDetails.payment_reference}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="section-kicker">Status</p>
+                            <p className="mt-2 text-sm text-drac-text">{paymentDetails.status}</p>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                     <Button
                       type="button"
@@ -215,53 +214,11 @@ export default function PaymentPage() {
                       className="mt-6"
                       onClick={handleDemoPayment}
                     >
-                      Continue Payment
+                      Complete Demo Payment
                     </Button>
                   </div>
                 </div>
               </div>
-
-              {stripeWarning ? (
-                <div className="drac-panel border-drac-gold/30 p-6">
-                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-drac-gold">
-                    Live Stripe Unavailable
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-drac-muted">
-                    {stripeWarning}
-                  </p>
-                </div>
-              ) : null}
-
-              {clientSecret && stripePromise ? (
-                <div className="drac-panel p-6">
-                  <p className="section-kicker">Optional Live Stripe</p>
-                  <h3 className="mt-2 font-heading text-3xl tracking-[0.14em] text-drac-text">
-                    Card Payment
-                  </h3>
-                  <p className="mt-3 text-sm leading-7 text-drac-muted">
-                    Keep this if you want to test the real card flow too.
-                  </p>
-                  <div className="mt-5">
-                    <Elements
-                      stripe={stripePromise}
-                      options={{
-                        clientSecret,
-                        appearance: {
-                          theme: "night",
-                          variables: {
-                            colorPrimary: "#F5C842",
-                            colorBackground: "#162032",
-                            colorText: "#F0F4F8",
-                            colorDanger: "#E63946",
-                          },
-                        },
-                      }}
-                    >
-                      <StripePaymentForm orderId={order.id} />
-                    </Elements>
-                  </div>
-                </div>
-              ) : null}
             </>
           ) : null}
         </div>

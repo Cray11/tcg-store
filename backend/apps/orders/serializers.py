@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from .models import Order, OrderItem, PromoCode
 from apps.users.serializers import AddressSerializer
@@ -15,6 +16,25 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    payment_summary = serializers.SerializerMethodField()
+
+    def get_payment_summary(self, obj):
+        try:
+            payment = obj.payment
+        except ObjectDoesNotExist:
+            return None
+
+        return {
+            "status": payment.status,
+            "amount": payment.amount,
+            "currency": payment.currency,
+            "provider": payment.provider,
+            "provider_label": payment.get_provider_display(),
+            "reference": payment.transaction_reference or payment.payment_reference,
+            "inventory_reserved": payment.inventory_reserved,
+            "receipt_email": obj.user.email,
+            "updated_at": payment.updated_at,
+        }
 
     class Meta:
         model = Order
@@ -24,7 +44,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "estimated_delivery", "shipping_full_name", "shipping_phone",
             "shipping_line1", "shipping_line2", "shipping_city",
             "shipping_province", "shipping_zip", "shipping_country",
-            "customer_note", "items", "created_at", "updated_at",
+            "customer_note", "items", "payment_summary", "created_at", "updated_at",
         ]
 
 

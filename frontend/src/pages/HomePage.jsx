@@ -187,7 +187,7 @@ export default function HomePage() {
               {
                 icon: ShieldCheck,
                 title: "Secure Checkout",
-                description: "Stripe-backed payment flow with the right signals for high-trust sealed product orders.",
+                description: "Structured demo checkout with payment references, invoice email output, and a polished end-to-end ordering flow.",
               },
             ].map((item) => {
               const Icon = item.icon;

@@ -7,6 +7,7 @@ class ProductFilter(django_filters.FilterSet):
     max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
     game = django_filters.CharFilter(field_name="category__game", lookup_expr="iexact")
     in_stock = django_filters.BooleanFilter(method="filter_in_stock")
+    set_name = django_filters.CharFilter(field_name="set_name", lookup_expr="iexact")
 
     class Meta:
         model = Product

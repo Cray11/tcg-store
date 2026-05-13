@@ -1,8 +1,8 @@
 import api from "./axios";
 
 export const paymentsAPI = {
-  createPaymentIntent: (orderId) =>
-    api.post("/payments/create-intent/", { order_id: orderId }),
-  simulatePaymentSuccess: (orderId) =>
-    api.post("/payments/simulate-success/", { order_id: orderId }),
+  prepareDemoPayment: (orderId) =>
+    api.post("/payments/prepare/", { order_id: orderId }),
+  completeDemoPayment: (orderId) =>
+    api.post("/payments/complete/", { order_id: orderId }),
 };

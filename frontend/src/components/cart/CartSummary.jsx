@@ -46,7 +46,7 @@ export default function CartSummary({
 
       <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-drac-border bg-drac-surface2 px-4 py-3 text-xs uppercase tracking-[0.16em] text-drac-muted">
         <ShieldCheck className="h-4 w-4 text-drac-green" />
-        Secure Checkout Powered by Stripe
+        Structured Demo Checkout
       </div>
 
       <Link to="/products" className="mt-4 block text-center text-xs font-semibold uppercase tracking-[0.16em] text-drac-gold">

@@ -21,8 +21,8 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = [
             "id", "name", "slug", "price", "compare_price", "discount_percent",
             "stock", "is_in_stock", "is_low_stock", "condition", "rarity",
-            "product_type", "image_url", "is_featured", "category_name", "game",
-            "set_name", "language", "is_foil",
+            "product_type", "image_url", "image_back_url", "is_featured",
+            "category_name", "game", "set_name", "card_number", "language", "is_foil",
         ]
 
 

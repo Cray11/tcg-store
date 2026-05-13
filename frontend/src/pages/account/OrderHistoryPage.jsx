@@ -100,6 +100,11 @@ export default function OrderHistoryPage() {
                   <div className="flex flex-wrap items-center gap-3">
                     <p className="font-mono text-sm text-drac-text">{order.order_number}</p>
                     <OrderStatusBadge status={order.status} />
+                    {order.payment_summary ? (
+                      <span className="badge border-drac-green/30 bg-drac-green/10 text-drac-green">
+                        {order.payment_summary.provider_label}
+                      </span>
+                    ) : null}
                   </div>
                   <p className="mt-2 text-sm text-drac-muted">{formatDate(order.created_at)}</p>
                   <div className="mt-3 flex items-center gap-2">
