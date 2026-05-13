@@ -217,7 +217,43 @@ How it works:
 
 You do not need any live gateway credentials to demo the full checkout experience.
 
-## 6. Testing and Verification
+## 6. Vercel Deployment
+
+This repo is best deployed to Vercel as two separate projects:
+
+- Frontend project with Root Directory set to `frontend`
+- Backend project with Root Directory set to `backend`
+
+Why two projects:
+
+- The frontend is a Vite single-page app
+- The backend is a standalone Django API
+- Demo checkout writes orders, payments, carts, and users, so the backend needs a real external database in production
+
+Recommended order:
+
+1. Import the GitHub repo into Vercel as the backend project with Root Directory `backend`
+2. Add backend environment variables:
+   `DJANGO_SETTINGS_MODULE=config.settings.production`
+   `DJANGO_SECRET_KEY=<strong-secret>`
+   `DATABASE_URL=<your-postgres-connection-string>`
+   `ALLOWED_HOSTS=.vercel.app`
+   `CORS_ALLOWED_ORIGINS=https://<your-frontend-domain>`
+   `CSRF_TRUSTED_ORIGINS=https://<your-frontend-domain>`
+   `FRONTEND_URL=https://<your-frontend-domain>`
+3. Deploy the backend and copy its public URL
+4. Import the same GitHub repo into Vercel as the frontend project with Root Directory `frontend`
+5. Add frontend environment variable:
+   `VITE_API_BASE_URL=https://<your-backend-domain>/api`
+6. Deploy the frontend
+
+Notes:
+
+- Vercel supports Django deployments from the `backend` directory, but SQLite is not suitable for a writable production demo
+- Use a managed Postgres database such as Neon, Supabase, or another hosted PostgreSQL provider
+- Development can stay on SQLite locally; production should use `DATABASE_URL`
+
+## 7. Testing and Verification
 
 ### Backend tests
 
@@ -236,7 +272,7 @@ npm run build
 cd ..
 ```
 
-## 7. Collaboration Workflow
+## 8. Collaboration Workflow
 
 Recommended team workflow:
 
@@ -264,7 +300,7 @@ git commit -m "feat(products): improve importer parsing"
 
 See [CONTRIBUTION.md](CONTRIBUTION.md) for the project’s contribution rules.
 
-## 8. Common Commands
+## 9. Common Commands
 
 Backend:
 
@@ -292,7 +328,7 @@ Importer:
 .\.venv\Scripts\python.exe backend\scripts\import_perfect_order.py
 ```
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 ### Admin shows product image column errors
 
@@ -324,7 +360,7 @@ Run the importer again:
 .\.venv\Scripts\python.exe backend\scripts\import_perfect_order.py
 ```
 
-## 10. Current Project Phase
+## 11. Current Project Phase
 
 This project is currently in the `functional demo / final polish` phase.
 
