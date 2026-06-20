@@ -19,8 +19,10 @@ import StockIndicator from "../../components/products/StockIndicator";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import Spinner from "../../components/ui/Spinner";
+import { useWishlistActions } from "../../hooks/useWishlistActions";
 import { useCartStore } from "../../store/cartStore";
 import { useUIStore } from "../../store/uiStore";
+import { useWishlistStore } from "../../store/wishlistStore";
 import { getErrorMessage, getPayload } from "../../utils/api";
 import { PLACEHOLDER_IMAGE } from "../../utils/constants";
 import { formatCurrency } from "../../utils/formatCurrency";
@@ -39,11 +41,17 @@ export default function ProductDetailPage() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [wishlisting, setWishlisting] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [showBack, setShowBack] = useState(false);
   const [showConditionGuide, setShowConditionGuide] = useState(false);
   const { setCart } = useCartStore();
   const { addToast } = useUIStore();
+  const hasWishlistLoaded = useWishlistStore((state) => state.hasLoaded);
+  const isWishlisted = useWishlistStore((state) =>
+    product ? state.items.some((entry) => entry.product.id === product.id) : false
+  );
+  const { toggleWishlist } = useWishlistActions();
 
   useEffect(() => {
     let active = true;
@@ -132,6 +140,19 @@ export default function ProductDetailPage() {
     }
   };
 
+  const handleWishlistToggle = async () => {
+    if (!product) {
+      return;
+    }
+
+    setWishlisting(true);
+    try {
+      await toggleWishlist(product);
+    } finally {
+      setWishlisting(false);
+    }
+  };
+
   if (loading) {
     return (
       <PageWrapper className="flex min-h-[60vh] items-center justify-center">
@@ -161,6 +182,7 @@ export default function ProductDetailPage() {
   const currentImage = showBack && product.image_back_url
     ? product.image_back_url
     : product.image_url || PLACEHOLDER_IMAGE;
+  const heartActive = hasWishlistLoaded ? isWishlisted : Boolean(product.is_in_wishlist);
 
   return (
     <PageWrapper>
@@ -271,9 +293,15 @@ export default function ProductDetailPage() {
                 <ShoppingCart className="h-4 w-4" />
                 {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
               </Button>
-              <Button type="button" variant="outline">
-                <Heart className="h-4 w-4" />
-                Add to Wishlist
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleWishlistToggle}
+                loading={wishlisting}
+                className={heartActive ? "border-drac-red/50 text-drac-red hover:bg-drac-red/10" : ""}
+              >
+                <Heart className={`h-4 w-4 ${heartActive ? "fill-current" : ""}`} />
+                {heartActive ? "Saved to Wishlist" : "Add to Wishlist"}
               </Button>
             </div>
           </div>

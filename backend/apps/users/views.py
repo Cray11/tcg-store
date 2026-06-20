@@ -4,10 +4,11 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
-from .models import CustomUser, Address
+from .models import Address, CustomUser, WishlistItem
 from .serializers import (
     RegisterSerializer, UserSerializer,
-    ChangePasswordSerializer, ResetPasswordConfirmSerializer, AddressSerializer
+    ChangePasswordSerializer, ResetPasswordConfirmSerializer, AddressSerializer,
+    WishlistItemCreateSerializer, WishlistItemSerializer,
 )
 from apps.notifications.emails import send_welcome_email, send_password_reset_email
 from apps.cart.models import Cart
@@ -178,6 +179,38 @@ def set_default_address(request, pk):
         data=AddressSerializer(address).data,
         message="Default address updated."
     )
+
+
+class WishlistListCreateView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        return WishlistItem.objects.filter(user=self.request.user).select_related("product__category")
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return WishlistItemCreateSerializer
+        return WishlistItemSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        item = serializer.save()
+
+        response_serializer = WishlistItemSerializer(item, context=self.get_serializer_context())
+        status_code = status.HTTP_201_CREATED if getattr(serializer, "created", False) else status.HTTP_200_OK
+        return Response(response_serializer.data, status=status_code)
+
+
+class WishlistDetailView(generics.DestroyAPIView):
+    serializer_class = WishlistItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = "product_id"
+    lookup_url_kwarg = "product_id"
+
+    def get_queryset(self):
+        return WishlistItem.objects.filter(user=self.request.user).select_related("product__category")
 
 
 # ── Helpers ───────────────────────────────────────────────────────

@@ -5,12 +5,14 @@ import { z } from "zod";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { authAPI } from "../../api/auth";
 import { cartAPI } from "../../api/cart";
+import { wishlistAPI } from "../../api/wishlist";
 import AuthShell from "../../components/auth/AuthShell";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import { useAuthStore } from "../../store/authStore";
 import { useCartStore } from "../../store/cartStore";
 import { useUIStore } from "../../store/uiStore";
+import { useWishlistStore } from "../../store/wishlistStore";
 import { getErrorMessage, getPayload } from "../../utils/api";
 
 const schema = z.object({
@@ -25,6 +27,7 @@ export default function LoginPage() {
   const from = location.state?.from?.pathname ?? "/";
   const { setAuth } = useAuthStore();
   const { setCart } = useCartStore();
+  const setWishlist = useWishlistStore((state) => state.setWishlist);
   const { addToast } = useUIStore();
 
   const {
@@ -43,11 +46,17 @@ export default function LoginPage() {
       const payload = getPayload(response);
       setAuth(payload.user, payload.tokens.access, payload.tokens.refresh);
 
-      try {
-        const cartResponse = await cartAPI.getCart();
-        setCart(getPayload(cartResponse));
-      } catch {
-        // Ignore cart bootstrap failures during login.
+      const [cartResponse, wishlistResponse] = await Promise.allSettled([
+        cartAPI.getCart(),
+        wishlistAPI.getWishlist(),
+      ]);
+
+      if (cartResponse.status === "fulfilled") {
+        setCart(getPayload(cartResponse.value));
+      }
+
+      if (wishlistResponse.status === "fulfilled") {
+        setWishlist(getPayload(wishlistResponse.value) ?? []);
       }
 
       addToast(`Welcome back, ${payload.user.first_name || "Trainer"}!`, "success");

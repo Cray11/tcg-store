@@ -13,9 +13,11 @@ import ToastContainer from "./components/ui/Toast";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { authAPI } from "./api/auth";
 import { cartAPI } from "./api/cart";
+import { wishlistAPI } from "./api/wishlist";
 import { useAuthStore } from "./store/authStore";
 import { useCartStore } from "./store/cartStore";
 import { useUIStore } from "./store/uiStore";
+import { useWishlistStore } from "./store/wishlistStore";
 import { getPayload } from "./utils/api";
 
 import Spinner from "./components/ui/Spinner";
@@ -36,6 +38,7 @@ const AddressBookPage = lazy(() => import("./pages/account/AddressBookPage"));
 const OrderHistoryPage = lazy(() => import("./pages/account/OrderHistoryPage"));
 const OrderDetailPage = lazy(() => import("./pages/account/OrderDetailPage"));
 const ChangePasswordPage = lazy(() => import("./pages/account/ChangePasswordPage"));
+const WishlistPage = lazy(() => import("./pages/account/WishlistPage"));
 const ShippingPage = lazy(() => import("./pages/checkout/ShippingPage"));
 const ShippingMethodPage = lazy(() => import("./pages/checkout/ShippingMethodPage"));
 const PaymentPage = lazy(() => import("./pages/checkout/PaymentPage"));
@@ -68,6 +71,7 @@ const PROTECTED_ROUTES = [
   { path: "/account/addresses", component: AddressBookPage },
   { path: "/account/orders", component: OrderHistoryPage },
   { path: "/account/orders/:id", component: OrderDetailPage },
+  { path: "/account/wishlist", component: WishlistPage },
   { path: "/account/password", component: ChangePasswordPage },
 ];
 
@@ -85,6 +89,8 @@ function AppShell() {
   const location = useLocation();
   const { accessToken, hasHydrated, updateUser, logout } = useAuthStore();
   const { setCart, clearCart } = useCartStore();
+  const setWishlist = useWishlistStore((state) => state.setWishlist);
+  const clearWishlist = useWishlistStore((state) => state.clearWishlist);
   const { setPageLoading } = useUIStore();
 
   useEffect(() => {
@@ -105,6 +111,7 @@ function AppShell() {
       try {
         if (!accessToken) {
           updateUser(null);
+          clearWishlist();
 
           try {
             const cartResponse = await cartAPI.getCart();
@@ -120,9 +127,10 @@ function AppShell() {
           return;
         }
 
-        const [profileResponse, cartResponse] = await Promise.allSettled([
+        const [profileResponse, cartResponse, wishlistResponse] = await Promise.allSettled([
           authAPI.getProfile(),
           cartAPI.getCart(),
+          wishlistAPI.getWishlist(),
         ]);
 
         if (!active) {
@@ -133,12 +141,21 @@ function AppShell() {
           updateUser(getPayload(profileResponse.value));
         } else {
           logout();
+          clearCart();
+          clearWishlist();
+          return;
         }
 
         if (cartResponse.status === "fulfilled") {
           setCart(getPayload(cartResponse.value));
         } else {
           clearCart();
+        }
+
+        if (wishlistResponse.status === "fulfilled") {
+          setWishlist(getPayload(wishlistResponse.value) ?? []);
+        } else {
+          clearWishlist();
         }
       } finally {
         if (active && showLoader) {
@@ -152,7 +169,7 @@ function AppShell() {
     return () => {
       active = false;
     };
-  }, [accessToken, clearCart, hasHydrated, logout, setCart, setPageLoading, updateUser]);
+  }, [accessToken, clearCart, clearWishlist, hasHydrated, logout, setCart, setPageLoading, setWishlist, updateUser]);
 
   return (
     <div className="flex min-h-screen flex-col">

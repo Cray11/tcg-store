@@ -14,4 +14,6 @@ urlpatterns = [
     path("addresses/", views.AddressListCreateView.as_view(), name="address_list"),
     path("addresses/<uuid:pk>/", views.AddressDetailView.as_view(), name="address_detail"),
     path("addresses/<uuid:pk>/set-default/", views.set_default_address, name="set_default_address"),
+    path("wishlist/", views.WishlistListCreateView.as_view(), name="wishlist_list"),
+    path("wishlist/<uuid:product_id>/", views.WishlistDetailView.as_view(), name="wishlist_detail"),
 ]

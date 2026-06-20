@@ -1,14 +1,16 @@
-import { LogOut, MapPin, Package2, Shield, User2 } from "lucide-react";
+import { Heart, LogOut, MapPin, Package2, Shield, User2 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { authAPI } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
 import { useCartStore } from "../../store/cartStore";
 import { useUIStore } from "../../store/uiStore";
+import { useWishlistStore } from "../../store/wishlistStore";
 import { cn } from "../../utils/cn";
 
 const LINKS = [
   { to: "/account", label: "Dashboard", icon: Shield, end: true },
   { to: "/account/orders", label: "My Orders", icon: Package2 },
+  { to: "/account/wishlist", label: "Wishlist", icon: Heart },
   { to: "/account/profile", label: "Profile", icon: User2 },
   { to: "/account/addresses", label: "Addresses", icon: MapPin },
   { to: "/account/password", label: "Change Password", icon: Shield },
@@ -18,6 +20,7 @@ export default function AccountSidebar() {
   const navigate = useNavigate();
   const { user, logout, refreshToken } = useAuthStore();
   const { clearCart } = useCartStore();
+  const clearWishlist = useWishlistStore((state) => state.clearWishlist);
   const { addToast } = useUIStore();
 
   const initials = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}` || "DN";
@@ -31,6 +34,7 @@ export default function AccountSidebar() {
 
     logout();
     clearCart();
+    clearWishlist();
     addToast("Logged out successfully.", "success");
     navigate("/");
   };

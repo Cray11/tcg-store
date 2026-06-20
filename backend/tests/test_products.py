@@ -56,3 +56,21 @@ def test_product_list_supports_exact_set_name_filter(api_client, category):
     assert response.status_code == 200
     returned_ids = {item["id"] for item in response.data["data"]}
     assert returned_ids == {str(matching_product.id)}
+
+
+@pytest.mark.django_db
+def test_product_list_marks_wishlisted_items_for_authenticated_users(auth_client, product, wishlist_item):
+    response = auth_client.get(reverse("product_list"))
+
+    assert response.status_code == 200
+    first_product = response.data["data"][0]
+    assert first_product["id"] == str(product.id)
+    assert first_product["is_in_wishlist"] is True
+
+
+@pytest.mark.django_db
+def test_product_detail_marks_non_wishlisted_items_for_authenticated_users(auth_client, product):
+    response = auth_client.get(reverse("product_detail", kwargs={"slug": product.slug}))
+
+    assert response.status_code == 200
+    assert response.data["is_in_wishlist"] is False

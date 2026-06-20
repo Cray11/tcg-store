@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ChevronDown,
+  Heart,
   LogOut,
   Menu,
   ShoppingCart,
@@ -11,6 +12,7 @@ import { authAPI } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
 import { useCartStore } from "../../store/cartStore";
 import { useUIStore } from "../../store/uiStore";
+import { useWishlistStore } from "../../store/wishlistStore";
 import MobileMenu from "./MobileMenu";
 import SearchBar from "../products/SearchBar";
 
@@ -18,6 +20,8 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, accessToken, logout, refreshToken } = useAuthStore();
   const { itemCount, clearCart } = useCartStore();
+  const wishlistCount = useWishlistStore((state) => state.items.length);
+  const clearWishlist = useWishlistStore((state) => state.clearWishlist);
   const { addToast } = useUIStore();
   const navigate = useNavigate();
 
@@ -30,6 +34,7 @@ export default function Navbar() {
 
     logout();
     clearCart();
+    clearWishlist();
     setMobileOpen(false);
     addToast("Logged out successfully.", "success");
     navigate("/");
@@ -64,8 +69,17 @@ export default function Navbar() {
             <Link to="/products" className="text-sm font-semibold uppercase tracking-[0.16em] text-drac-muted hover:text-drac-gold">
               Shop
             </Link>
-            <Link to="/products?product_type=BOX" className="text-sm font-semibold uppercase tracking-[0.16em] text-drac-muted hover:text-drac-gold">
-              Sealed
+            <Link
+              to={accessToken ? "/account/wishlist" : "/login"}
+              state={accessToken ? undefined : { from: { pathname: "/account/wishlist" } }}
+              className="relative rounded-full border border-drac-border bg-drac-surface p-3 text-drac-text hover:border-drac-gold/50"
+            >
+              <Heart className="h-5 w-5" />
+              {wishlistCount > 0 ? (
+                <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-drac-red text-[10px] font-bold text-white">
+                  {wishlistCount > 9 ? "9+" : wishlistCount}
+                </span>
+              ) : null}
             </Link>
             <Link to="/cart" className="relative rounded-full border border-drac-border bg-drac-surface p-3 text-drac-text hover:border-drac-gold/50">
               <ShoppingCart className="h-5 w-5" />
@@ -94,6 +108,9 @@ export default function Navbar() {
                   <Link to="/account/orders" className="block rounded-xl px-4 py-3 text-sm text-drac-text hover:bg-white/5">
                     My Orders
                   </Link>
+                  <Link to="/account/wishlist" className="block rounded-xl px-4 py-3 text-sm text-drac-text hover:bg-white/5">
+                    Wishlist
+                  </Link>
                   <button
                     type="button"
                     onClick={handleLogout}
@@ -112,6 +129,18 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-3 md:hidden">
+            <Link
+              to={accessToken ? "/account/wishlist" : "/login"}
+              state={accessToken ? undefined : { from: { pathname: "/account/wishlist" } }}
+              className="relative rounded-full border border-drac-border bg-drac-surface p-3 text-drac-text"
+            >
+              <Heart className="h-5 w-5" />
+              {wishlistCount > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-drac-red text-[10px] font-bold text-white">
+                  {wishlistCount > 9 ? "9+" : wishlistCount}
+                </span>
+              ) : null}
+            </Link>
             <Link to="/cart" className="relative rounded-full border border-drac-border bg-drac-surface p-3 text-drac-text">
               <ShoppingCart className="h-5 w-5" />
               {itemCount > 0 ? (
@@ -135,6 +164,7 @@ export default function Navbar() {
         open={mobileOpen}
         authenticated={Boolean(accessToken)}
         itemCount={itemCount}
+        wishlistCount={wishlistCount}
         onClose={() => setMobileOpen(false)}
         onLogout={handleLogout}
       />

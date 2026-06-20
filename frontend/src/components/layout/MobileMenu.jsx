@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 
 const NAV_LINKS = [
   { to: "/products", label: "All Cards" },
-  { to: "/products?product_type=BOX", label: "Sealed Products" },
   { to: "/search?q=charizard", label: "Popular Search" },
 ];
 
@@ -10,6 +9,7 @@ export default function MobileMenu({
   open,
   authenticated,
   itemCount,
+  wishlistCount,
   onClose,
   onLogout,
 }) {
@@ -43,6 +43,14 @@ export default function MobileMenu({
               className="block rounded-2xl border border-drac-border bg-drac-surface px-5 py-4 text-lg font-semibold text-drac-text"
             >
               Cart {itemCount > 0 ? `(${itemCount})` : ""}
+            </Link>
+            <Link
+              to={authenticated ? "/account/wishlist" : "/login"}
+              state={authenticated ? undefined : { from: { pathname: "/account/wishlist" } }}
+              onClick={onClose}
+              className="block rounded-2xl border border-drac-border bg-drac-surface px-5 py-4 text-lg font-semibold text-drac-text"
+            >
+              Wishlist {wishlistCount > 0 ? `(${wishlistCount})` : ""}
             </Link>
             {authenticated ? (
               <>

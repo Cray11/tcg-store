@@ -3,7 +3,9 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
-from .models import CustomUser, Address
+from apps.products.models import Product
+from apps.products.serializers import ProductListSerializer
+from .models import Address, CustomUser, WishlistItem
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -74,3 +76,33 @@ class AddressSerializer(serializers.ModelSerializer):
         fields = ["id", "full_name", "phone", "line1", "line2",
                   "city", "province", "zip_code", "country", "is_default", "created_at"]
         read_only_fields = ["id", "created_at"]
+
+
+class WishlistItemSerializer(serializers.ModelSerializer):
+    product = ProductListSerializer(read_only=True)
+
+    class Meta:
+        model = WishlistItem
+        fields = ["id", "product", "created_at"]
+        read_only_fields = fields
+
+
+class WishlistItemCreateSerializer(serializers.Serializer):
+    product_id = serializers.UUIDField()
+
+    def validate_product_id(self, value):
+        try:
+            product = Product.objects.select_related("category").get(pk=value, is_active=True)
+        except Product.DoesNotExist:
+            raise serializers.ValidationError("Product not found.")
+
+        self.product = product
+        return value
+
+    def create(self, validated_data):
+        item, created = WishlistItem.objects.get_or_create(
+            user=self.context["request"].user,
+            product=self.product,
+        )
+        self.created = created
+        return item

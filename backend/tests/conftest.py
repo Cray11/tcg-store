@@ -1,7 +1,6 @@
 import pytest
 from rest_framework.test import APIClient
-from apps.users.models import CustomUser
-from apps.users.models import Address
+from apps.users.models import Address, CustomUser, WishlistItem
 from apps.products.models import Category, Product
 from apps.cart.models import Cart, CartItem
 
@@ -88,3 +87,8 @@ def user_cart(db, user):
 @pytest.fixture
 def user_cart_item(db, user_cart, product):
     return CartItem.objects.create(cart=user_cart, product=product, quantity=2)
+
+
+@pytest.fixture
+def wishlist_item(db, user, product):
+    return WishlistItem.objects.create(user=user, product=product)

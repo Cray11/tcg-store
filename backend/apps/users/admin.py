@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, Address
+from .models import Address, CustomUser, WishlistItem
 
 
 @admin.register(CustomUser)
@@ -29,3 +29,10 @@ class AddressAdmin(admin.ModelAdmin):
     list_display = ["full_name", "user", "city", "province", "is_default"]
     list_filter = ["province", "country", "is_default"]
     search_fields = ["full_name", "user__email", "city"]
+
+
+@admin.register(WishlistItem)
+class WishlistItemAdmin(admin.ModelAdmin):
+    list_display = ["user", "product", "created_at"]
+    list_filter = ["created_at", "product__category__game"]
+    search_fields = ["user__email", "product__name", "product__sku"]

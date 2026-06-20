@@ -82,9 +82,6 @@ export default function HomePage() {
             <Link to="/products" className="btn-primary">
               Shop Cards
             </Link>
-            <Link to="/products?product_type=BOX" className="btn-secondary">
-              Sealed Products
-            </Link>
           </div>
           <div className="mt-16 flex flex-col items-center gap-3 text-drac-muted">
             <div className="pokeball-scroll animate-bounce-soft" />

@@ -5,12 +5,14 @@ import { ordersAPI } from "../../api/orders";
 import AccountShell from "../../components/account/AccountShell";
 import OrderStatusBadge from "../../components/account/OrderStatusBadge";
 import { useAuthStore } from "../../store/authStore";
+import { useWishlistStore } from "../../store/wishlistStore";
 import { formatCurrency } from "../../utils/formatCurrency";
 import { formatDate } from "../../utils/formatDate";
 import { getPayload } from "../../utils/api";
 
 export default function AccountDashboardPage() {
   const { user, updateUser } = useAuthStore();
+  const wishlistCount = useWishlistStore((state) => state.items.length);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,17 +54,19 @@ export default function AccountDashboardPage() {
       totalOrders: orders.length,
       pendingOrders,
       totalSpent,
+      wishlistCount,
     };
-  }, [orders]);
+  }, [orders, wishlistCount]);
 
   return (
     <AccountShell
       title={`Welcome Back, ${(user?.first_name || "Trainer").toUpperCase()}!`}
       description="Track your orders, collector stats, and key account actions from one control room."
     >
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Orders" value={stats.totalOrders} />
         <StatCard label="Pending Orders" value={stats.pendingOrders} />
+        <StatCard label="Wishlist Cards" value={stats.wishlistCount} />
         <StatCard label="Total Spent" value={formatCurrency(stats.totalSpent)} />
       </div>
 

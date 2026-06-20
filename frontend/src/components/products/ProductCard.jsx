@@ -2,8 +2,10 @@ import { Heart, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { cartAPI } from "../../api/cart";
+import { useWishlistActions } from "../../hooks/useWishlistActions";
 import { useCartStore } from "../../store/cartStore";
 import { useUIStore } from "../../store/uiStore";
+import { useWishlistStore } from "../../store/wishlistStore";
 import { getErrorMessage, getPayload } from "../../utils/api";
 import { cn } from "../../utils/cn";
 import { PLACEHOLDER_IMAGE } from "../../utils/constants";
@@ -17,7 +19,14 @@ export default function ProductCard({ product }) {
   const [adding, setAdding] = useState(false);
   const { setCart } = useCartStore();
   const { addToast } = useUIStore();
+  const hasWishlistLoaded = useWishlistStore((state) => state.hasLoaded);
+  const isWishlisted = useWishlistStore((state) =>
+    state.items.some((entry) => entry.product.id === product.id)
+  );
+  const wishlistPending = useWishlistStore((state) => Boolean(state.pendingIds[product.id]));
+  const { toggleWishlist } = useWishlistActions();
   const rarityClass = getRarityStyles(product.rarity);
+  const heartActive = hasWishlistLoaded ? isWishlisted : Boolean(product.is_in_wishlist);
 
   const handleAddToCart = async (event) => {
     event.preventDefault();
@@ -37,6 +46,12 @@ export default function ProductCard({ product }) {
     } finally {
       setAdding(false);
     }
+  };
+
+  const handleWishlistToggle = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    await toggleWishlist(product);
   };
 
   return (
@@ -102,9 +117,18 @@ export default function ProductCard({ product }) {
 
             <button
               type="button"
-              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-drac-border bg-drac-bg/60 text-drac-muted backdrop-blur transition-colors hover:text-drac-gold"
+              onClick={handleWishlistToggle}
+              disabled={wishlistPending}
+              aria-label={heartActive ? "Remove from wishlist" : "Add to wishlist"}
+              className={cn(
+                "absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-drac-border bg-drac-bg/60 backdrop-blur transition-colors",
+                heartActive
+                  ? "border-drac-red/50 text-drac-red"
+                  : "text-drac-muted hover:text-drac-gold",
+                wishlistPending && "cursor-wait opacity-70"
+              )}
             >
-              <Heart className="h-4 w-4" />
+              <Heart className={cn("h-4 w-4", heartActive && "fill-current")} />
             </button>
           </div>
         </Link>

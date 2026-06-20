@@ -1,7 +1,4 @@
-# DracNest
-
-DracNest is a demo-ready Pokemon Trading Card Game e-commerce platform built with Django REST Framework and React. It is designed to behave like a real online store for presentation, development practice, and team collaboration.
-
+# DracNest TCG-Store
 ## What This Project Includes
 
 - Pokemon-only storefront and product catalog
@@ -370,11 +367,3 @@ That means:
 - It behaves like a real store for demo and presentation purposes
 - Some parts are intentionally simulated rather than fully productionized
 
-## Support
-
-If you are onboarding onto the project and something is unclear:
-
-1. Read this README fully
-2. Check [CONTRIBUTION.md](CONTRIBUTION.md)
-3. Run the setup commands exactly as written
-4. Ask the team before changing shared setup or import scripts
