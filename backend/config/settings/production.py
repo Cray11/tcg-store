@@ -7,7 +7,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.getenv("ALLOWED_HOSTS", ".vercel.app").split(",")
+    for host in os.getenv("ALLOWED_HOSTS", ".vercel.app,.up.railway.app").split(",")
     if host.strip()
 ]
 
